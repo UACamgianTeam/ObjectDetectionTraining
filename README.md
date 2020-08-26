@@ -15,7 +15,7 @@ The Tensorflow API uses a special type of file for its input images: The [TFReco
 A fully documented implementation of the conversion of COCO datasets into this proper TFRecord file format are found [here](tensorflow_object_detection_create_coco_tfrecord)
 
 ## New datasets
-While the COCO dataset is vast, and contains many examples of each of the 3 classes we care about (people, cars, and trucks), the dataset doesn't contain many images from strange, unusual images, such as the overhead perspective of the objects captured by drones or surveillance footage. Here are some promising datasets that should help to mitigate this issue:
+While the COCO dataset is vast, and contains many examples of each of the classes from the limited subset we care about (people, cars, trucks, etc.), the dataset doesn't contain many strange images from unusual angles, such as the overhead perspective of the objects captured by drones or surveillance footage. Here are some promising datasets that should help to mitigate this issue:
 * [Vis-Drone](https://github.com/VisDrone/VisDrone-Dataset)
 * [UAVDT](https://sites.google.com/site/daviddo0323/projects/uavdt)
 
