@@ -1,3 +1,10 @@
 
+# Data files
+**/*.tfrecord
+**/*.record
 
+# Virtual environment
+env/
+
+**/__pycache__
 **/.DS_Store

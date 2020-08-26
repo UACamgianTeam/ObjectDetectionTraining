@@ -1,5 +1,13 @@
-# Model Retraining
-Scripts for retraining Tensorflow Zoo models on a selective subset of COCO classes
+# Model Training
+Scripts for (re)training Tensorflow Zoo models on a selective subset of COCO classes
+
+## Dependencies
+Run `./install_deps.sh` to install necessary dependencies.
+Set the environment variable `NOT_NVIDIA=true` if you
+are installing on a non-Jetson device.
+
+The script creates a Python virtual environment, which you
+can activate by running `source env/bin/activate`.
 
 ## Generating input data
 The Tensorflow API uses a special type of file for its input images: The [TFRecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format.
