@@ -12,18 +12,18 @@ TENSORFLOW_MODEL_REPO=$(find ~ -type d -wholename "*/tensorflow/models/research"
 { echo "Could not find tensorflow/models/research repository. Clone that repo and try again!" ; exit 1; }
 
 # Get the model type that the user wishes to retrain
-printf("Which model do you want to retrain?\n")
-printf("1. ssd_mobilenet_v2_coco_2019_03_29\n")
-printf("Select a number: ")
-read MODEL_NUM
+echo "Which model do you want to retrain?"
+echo "1. ssd_mobilenet_v2_coco_2019_03_29"
+echo "Select a number: "
+read -r MODEL_NUM
 
 # Set the path to the pipeline.config file and the output model directory based upon the model type
-if [ $MODEL_NUM == 1 ] # ssd_mobilenet_v2_coco_2018_03_29
+if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2_coco_2018_03_29
 then
   PIPELINE_CONFIG_PATH={"${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config"}
   MODEL_DIR={"${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29"}
 else
-  { echo "Try again. \n" ; exit 1; }
+  { echo "Selection ${MODEL_NUM} not found. Try again, make sure the number you enter matches the model you wish to train!" ; exit 1; }
 fi
 
 # Set the number of training steps
