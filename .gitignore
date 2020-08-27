@@ -11,3 +11,7 @@ env/
 
 # PyCharm
 .idea
+
+# model directories
+models/original_models/
+models/retrained_models/
