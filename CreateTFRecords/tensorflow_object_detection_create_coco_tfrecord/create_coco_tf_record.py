@@ -36,8 +36,7 @@ import dataset_util
 flags = tf.app.flags
 flags.DEFINE_string('data_dir', './coco_2017', 'Root directory to raw Microsoft COCO dataset.')
 flags.DEFINE_string('set', 'val', 'Convert training set or validation set')
-flags.DEFINE_string('output_filepath', '/home/ubuntu/PycharmProjects/JetsonBenchmarking/model_retraining/tfrecords'
-                                       '/coco_2017_val.tfrecord', 'Path to output TFRecord')
+flags.DEFINE_string('output_filepath', './pascal.tfrecord', 'Path to output TFRecord')
 flags.DEFINE_bool('shuffle_imgs', True, 'whether to shuffle images of coco')
 FLAGS = flags.FLAGS
 
@@ -76,7 +75,7 @@ def load_coco_detection_dataset(imgs_dir, annotations_filepath, shuffle_img=True
         anns = coco.loadAnns(ann_ids)
 
         # Implement limited class selection
-        bboxes, labels = get_labels_and_bboxes(anns=anns,
+        labels, bboxes = get_labels_and_bboxes(anns=anns,
                                                expected_label_ids={1, 2, 3, 4, 5, 6, 7, 8, 9},
                                                pic_width=pic_width,
                                                pic_height=pic_height)
