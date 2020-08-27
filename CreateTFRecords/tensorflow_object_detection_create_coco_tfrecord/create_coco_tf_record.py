@@ -75,55 +75,11 @@ def load_coco_detection_dataset(imgs_dir, annotations_filepath, shuffle_img=True
         ann_ids = coco.getAnnIds(imgIds=img_id, catIds=cat_ids)
         anns = coco.loadAnns(ann_ids)
 
-        '''
-        New code block to implement limited class selection.
-        This version uses the same label map as the full COCO dataset, i.e. mscoco_label_map.pbtxt
-        '''
-        ####################################################
-
-        # The ids of the select classes which we want to train our new network on
-        expected_label_ids = {1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-        for ann in anns:
-            category_id = ann['category_id']
-            if not category_id in expected_label_ids:
-                continue
-            bboxes_data = ann['bbox']
-            bboxes_data = [bboxes_data[0] / float(pic_width), bboxes_data[1] / float(pic_height), \
-                           bboxes_data[2] / float(pic_width), bboxes_data[3] / float(pic_height)]
-            # the format of coco bounding boxes is [Xmin, Ymin, width, height]
-            bboxes.append(bboxes_data)
-            labels.append(category_id)
-
-        ####################################################
-
-        '''
-        New code block to implement limited class selection.
-        This version uses a new label map with only the classes we specify, i.e. the label id's change
-        '''
-        ####################################################
-
-        # The ids of the select classes which we want to train our new network on
-        # expected_label_ids = {1,3,8}
-
-        # for ann in anns:
-        #     category_id = ann['category_id']
-        #     if not category_id in expected_label_ids:
-        #         continue
-        #     bboxes_data = ann['bbox']
-        #     bboxes_data = [bboxes_data[0]/float(pic_width), bboxes_data[1]/float(pic_height), \
-        #                             bboxes_data[2]/float(pic_width), bboxes_data[3]/float(pic_height)]
-        #                 # the format of coco bounding boxs is [Xmin, Ymin, width, height]
-        #     bboxes.append(bboxes_data)
-
-        #     if category_id == 1:
-        #         labels.append(category_id)
-        #     elif category_id == 3:
-        #         labels.append(2)
-        #     elif category_id == 8:
-        #         labels.append(3)
-
-        ####################################################
+        # Implement limited class selection
+        bboxes, labels = get_labels_and_bboxes(anns=anns,
+                                               expected_label_ids={1, 2, 3, 4, 5, 6, 7, 8, 9},
+                                               pic_width=pic_width,
+                                               pic_height=pic_height)
 
         if len(labels) == 0:
             continue
@@ -169,6 +125,48 @@ def dict_to_coco_example(img_data):
         'image/format': dataset_util.bytes_feature('jpeg'.encode('utf-8')),
     }))
     return example
+
+
+def get_labels_and_bboxes(anns, expected_label_ids, pic_width, pic_height):
+    """
+    Gets labels and bounding boxes for the limited subset of COCO classes that we care about
+
+    Args:
+        pic_width: The image width
+        pic_height: The image height
+        anns: An array of ann objects, each of which is an annotation with bbox info and a label
+        expected_label_ids: (set) The subset of class labels that we are interested in
+
+    Returns:
+        labels: A list of the corresponding labels for the objects matching our subset of classes
+        bboxes: A list of bounding boxes of our subset of classes
+    """
+
+    bboxes = []
+    labels = []
+
+    # For each annotation...
+    for ann in anns:
+
+        # Get the category of the annotation
+        category_id = ann['category_id']
+
+        # If that category doesn't exist in our limited set, continue, and don't add this annotation
+        if not category_id in expected_label_ids:
+            continue
+
+        # Get the bounding box data from the annotation
+        bboxes_data = ann['bbox']
+
+        # Separate the bounding box data into the proper COCO format: [Xmin, Ymin, width, height
+        bboxes_data = [bboxes_data[0] / float(pic_width), bboxes_data[1] / float(pic_height),
+                       bboxes_data[2] / float(pic_width), bboxes_data[3] / float(pic_height)]
+
+        # Add the label amd bounding box info for this annotation to the list of labels and bounding boxes
+        bboxes.append(bboxes_data)
+        labels.append(category_id)
+
+    return labels, bboxes
 
 
 def main(_):
