@@ -25,8 +25,8 @@ read -r MODEL_NUM
 # Set the path to the pipeline.config file and the output model directory based upon the model type
 if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2_coco_2018_03_29
 then
-  PIPELINE_CONFIG_PATH={"${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config"}
-  TRAIN_DIR={"${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29"}
+  PIPELINE_CONFIG_PATH="${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config"
+  TRAIN_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29"
 else
   { echo "Selection ${MODEL_NUM} not found. Try again, make sure the number you enter matches the model you wish to train!" ; exit 1; }
 fi
@@ -42,4 +42,4 @@ export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 echo "Running retraining script..."
 python object_detection/legacy/train.py \
     --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
-    --model_dir="${TRAIN_DIR}"
+    --train_dir="${TRAIN_DIR}"
