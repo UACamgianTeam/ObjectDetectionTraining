@@ -1,8 +1,10 @@
 #!/usr/bin/bash
 # Used to train TensorFlow 1 models
 
-# Find a store the current repo path
-OBJECTDETECTIONTRAINING_REPO=$(pwd)
+# Find and store the current path, which should be .../ObjectionDetectionTraining/models
+OBJECTDETECTIONTRAINING_REPO="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+echo "$OBJECTDETECTIONTRAINING_REPO" && exit 0
 
 # Find and store the tensorflow/models/research repo path
 TENSORFLOW_MODEL_REPO=$(find ~ -type d -wholename "*/tensorflow/models/research" )
