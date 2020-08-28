@@ -58,6 +58,11 @@ pip3 install pillow
 echo "Installing matplotlib (this will take about 10 minutes)"
 pip3 install matplotlib
 
+# Based upon new updates from https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf1.md
+pip3 install pandas==1.1.1
+pip3 install pytz==2020.1
+pip3 install scipy==1.5.2
+pip3 install tf-slim==1.1.0
 
 REPO_DIR=~/git/tf_models/
 PREV_DIR=`pwd`
