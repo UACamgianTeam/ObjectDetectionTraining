@@ -20,3 +20,13 @@ While the COCO dataset is vast, and contains many examples of each of the classe
 * [UAVDT](https://sites.google.com/site/daviddo0323/projects/uavdt)
 
 If one of these (or other similar) datasets proves to be unsuitable for the task, the tool [labelImg](https://github.com/tzutalin/labelImg) is an effective little application to create bounding boxes for image datasets. It's time consuming, but an accurate and effective tool for the job.
+
+## Retraining Models
+In order to retrain models, you must first clone the [tensorflow/models](https://github.com/tensorflow/models) repository. 
+```
+git clone https://github.com/tensorflow/models.git
+```
+
+Then, run ```./install_deps.sh``` to install necessary dependencies in a virtual environment. Afterwards, activate this virtual environment by running ```source env/bin/activate```.
+
+Finally, run ```bash models/retrain_model.sh``` to retrain models, assuming that you've downloaded those models from the Tensorflow Model Zoo and put them in the folder '.../ObjectDetection/models/original_models'
