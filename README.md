@@ -26,7 +26,7 @@ In order to retrain models, you must first clone the [tensorflow/models](https:/
 ```
 git clone https://github.com/tensorflow/models.git
 ```
-**NOTE:** There is a known issue with some of the scripts in the tensorflow/models repository that may cause errors upon training or evaluating models when using a CUDA-enabled GPU. These errors stem from the fact that, by default, TensorFlow may allocate all of the GPU memory to the model to be trained, causing some serious issues. Therefore, add the following lines to files in [tensorflow/models/object_detection/legacy](https://github.com/tensorflow/models/object_detection/legacy) if you see some errors along the lines of ```CUDNN_STATUS_INTERNAL_ERROR```:
+**NOTE:** There is a known issue with some of the scripts in the tensorflow/models repository that may cause errors upon training or evaluating models when using a CUDA-enabled GPU. These errors stem from the fact that, by default, TensorFlow may allocate all of the GPU memory to the model to be trained, causing some serious issues. Therefore, add the following lines to files in [tensorflow/models/object_detection](https://github.com/tensorflow/models/object_detection) or [tensorflow/models/object_detection/legacy](https://github.com/tensorflow/models/object_detection/legacy) if you see some errors along the lines of ```CUDNN_STATUS_INTERNAL_ERROR```:
 ```
 # Fix a bug in TensorFlow by setting allow_growth to True to dynamically grow the memory used
 session_config = tf.ConfigProto()
