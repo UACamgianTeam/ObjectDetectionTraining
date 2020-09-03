@@ -28,6 +28,8 @@ then
   PIPELINE_CONFIG_PATH="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config"
   ORIGINAL_MODEL_DIR="${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v2_coco_2018_03_29"
   RETRAINED_MODEL_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29"
+  ORIGINAL_MODEL_EVAL_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29/eval_summaries"
+  RETRAINED_MODEL_EVAL_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29/eval_summaries"
 else
   { echo "Selection ${MODEL_NUM} not found. Try again, make sure the number you enter matches the model you wish to train!" ; exit 1; }
 fi
@@ -40,8 +42,18 @@ printf "ORIGINAL_MODEL_DIR: %s\n\n" "$ORIGINAL_MODEL_DIR"
 # Update PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 
-# Run the evaluation script
-echo "Running evaluation script..."
-python object_detection/legacy/evaluate.py \
+# Run the evaluation script on the retrained model
+printf "Running evaluation script on retrained model...\n"
+python object_detection/legacy/eval.py \
     --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
-    --train_dir="${TRAIN_DIR}"
+    --checkpoint_dir="${RETRAINED_MODEL_DIR}" \
+    --eval_dir="${RETRAINED_MODEL_EVAL_DIR}"
+printf "Done running evaluation script on retrained model!\n Evaluation summaries saved here => %s" "$RETRAINED_MODEL_EVAL_DIR"
+
+  # Run the evaluation script on the original model
+printf "Running evaluation script on original model...\n"
+python object_detection/legacy/eval.py \
+    --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
+    --checkpoint_dir="${ORIGINAL_MODEL_DIR}" \
+    --eval_dir="${ORIGINAL_MODEL_EVAL_DIR}"
+printf "Done running evaluation script on original model!\n Evaluation summaries saved here => %s" "$ORIGINAL_MODEL_EVAL_DIR"
