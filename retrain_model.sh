@@ -26,6 +26,6 @@ printf "RETRAINED_MODEL_DIR: %s\n\n" "$RETRAINED_MODEL_DIR"
 ## Retrain model
 printf "Retraining model...\n"
 python model_main_tf2.py \
-    --model_dir="${RETRAINED_MODEL_DIR}" \
+    --model_dir="${MODEL_DIR}" \
     --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
 printf "Done retraining model!\n"
