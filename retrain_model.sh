@@ -12,8 +12,8 @@ read -r MODEL_NUM
 # Set the path to the pipeline.config file and the output model directory based on the model type
 if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2_fpnlite
 then
-  PIPELINE_CONFIG_PATH="${OBJECTDETECTIONTRAINING_REPO}/models/retrained_models/my_ssd_mobilenet_v2_fpnlite/pipeline.config"
-  MODEL_DIR="${OBJECTDETECTIONTRAINING_REPO}/models/retrained_models/my_ssd_mobilenet_v2_fpnlite"
+  PIPELINE_CONFIG_PATH="models/retrained_models/my_ssd_mobilenet_v2_fpnlite/pipeline.config"
+  MODEL_DIR="models/retrained_models/my_ssd_mobilenet_v2_fpnlite"
 else
   { echo "Selection ${MODEL_NUM} not found. Try again, make sure the number you enter matches the model you wish to train!" ; exit 1; }
 fi
