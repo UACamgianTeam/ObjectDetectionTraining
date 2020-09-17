@@ -17,16 +17,21 @@ fi
 
 # Get the model type that the user wishes to retrain
 printf "Which model do you want to retrain?\n"
-printf "1. ssd_mobilenet_v2_coco_2019_03_29\n"
+printf "1. ssd_mobilenet_v2\n"
+printf "2. ssd_mobilenet_v1\n"
 printf "\n"
 printf "Select a number: "
 read -r MODEL_NUM
 
 # Set the path to the pipeline.config file and the output model directory based upon the model type
-if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2_coco_2018_03_29
+if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2
 then
   PIPELINE_CONFIG_PATH="${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config"
   MODEL_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v2_coco_2018_03_29"
+elif [ "$MODEL_NUM" == 2 ] # ssd_mobilenet_v1
+then
+  PIPELINE_CONFIG_PATH="${OBJECTDETECTIONTRAINING_REPO}/original_models/ssd_mobilenet_v1_coco_2018_01_28/pipeline.config"
+  MODEL_DIR="${OBJECTDETECTIONTRAINING_REPO}/retrained_models/ssd_mobilenet_v1_coco_2018_01_28"
 else
   { echo "Selection ${MODEL_NUM} not found. Try again, make sure the number you enter matches the model you wish to train!" ; exit 1; }
 fi

@@ -46,7 +46,7 @@ def load_coco_detection_dataset(imgs_dir, annotations_filepath, shuffle_img=True
     Args:
         imgs_dir: directories of coco images
         annotations_filepath: file path of coco annotations file
-        shuffle_img: wheter to shuffle images order
+        shuffle_img: whether to shuffle images order
     Return:
         coco_data: list of dictionary format information of each image
     """
@@ -76,7 +76,7 @@ def load_coco_detection_dataset(imgs_dir, annotations_filepath, shuffle_img=True
 
         # Implement limited class selection
         labels, bboxes = get_labels_and_bboxes(anns=anns,
-                                               expected_label_ids={1, 2, 3, 4, 5, 6, 7, 8, 9},
+                                               expected_label_ids={1},
                                                pic_width=pic_width,
                                                pic_height=pic_height)
 
