@@ -2,6 +2,7 @@
 # Data files
 **/*.tfrecord
 **/*.record
+coco_2017/
 
 # Virtual environment
 env/
@@ -15,3 +16,4 @@ env/
 # model directories
 models/original_models/
 models/retrained_models/
+train/

@@ -14,7 +14,7 @@ read -r MODEL_NUM
 if [ "$MODEL_NUM" == 1 ] # ssd_mobilenet_v2_fpnlite (original)
 then
   LOGDIR="models/original_models/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8/eval"
-elif [ "$MODEL_NUM" == 2 ] # ssd_mobilnet_v2_fpnlite (original)
+elif [ "$MODEL_NUM" == 2 ] # ssd_mobilenet_v2_fpnlite (original)
 then
   LOGDIR="models/retrained_models/my_ssd_mobilenet_v2_fpnlite/eval"
 else

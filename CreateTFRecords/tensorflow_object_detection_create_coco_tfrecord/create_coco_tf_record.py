@@ -26,7 +26,8 @@ from __future__ import print_function
 from pycocotools.coco import COCO
 from PIL import Image
 from random import shuffle
-import os, sys
+import os
+import sys
 import numpy as np
 import tensorflow.compat.v1 as tf
 import logging
@@ -34,10 +35,10 @@ import logging
 import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('data_dir', './coco_2017', 'Root directory to raw Microsoft COCO dataset.')
+flags.DEFINE_string('data_dir', '../../data/coco_2017', 'Root directory to raw Microsoft COCO dataset.')
 flags.DEFINE_string('set', 'val', 'Convert training set or validation set')
 flags.DEFINE_string('output_filepath', './pascal.tfrecord', 'Path to output TFRecord')
-flags.DEFINE_bool('shuffle_imgs', True, 'whether to shuffle images of coco')
+flags.DEFINE_bool('shuffle_imgs', False, 'whether to shuffle images of coco')
 FLAGS = flags.FLAGS
 
 
@@ -76,7 +77,7 @@ def load_coco_detection_dataset(imgs_dir, annotations_filepath, shuffle_img=True
 
         # Implement limited class selection
         labels, bboxes = get_labels_and_bboxes(anns=anns,
-                                               expected_label_ids={1},
+                                               expected_label_ids={1, 2},
                                                pic_width=pic_width,
                                                pic_height=pic_height)
 
@@ -106,6 +107,11 @@ def dict_to_coco_example(img_data):
     """
     bboxes = img_data['bboxes']
     xmin, xmax, ymin, ymax = [], [], [], []
+
+    for label in img_data['labels']:
+        if label != 1:
+            exit(f"AHHHHHHHH wrong bounding box! somehow the label: \"{img_data['label']}\" made its way in!")
+
     for bbox in bboxes:
         xmin.append(bbox[0])
         xmax.append(bbox[0] + bbox[2])
