@@ -16,7 +16,7 @@ def trim_xml_annotations(instance_annotations_path, class_subset):
 
     """
 
-    # Iterate recursively over annotation files in the validation set
+    # Iterate recursively over annotation files in the dataset
     for root_name, dir_names, file_names in os.walk(instance_annotations_path, topdown=False):
         for file_name in file_names:
             if os.path.join(root_name, file_name).endswith('.xml'):
@@ -45,8 +45,6 @@ def trim_xml_annotations(instance_annotations_path, class_subset):
 
 def main():
     class_subset = ['person']
-    test_input_name = '../../data/fake_anno.xml'
-    test_output_name = '../../data/fake_anno_rewritten.xml'
     instance_val_annotations_path = '../../data/coco_2017/annotations/instance_val_annotation'
     instance_train_annotations_path = '../../data/coco_2017/annotations/instance_train_annotation'
 
