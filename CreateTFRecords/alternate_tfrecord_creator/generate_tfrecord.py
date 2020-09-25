@@ -96,10 +96,10 @@ def xml_to_csv_with_class_subdirs(path):
                      # class name
                      member[0].text,
                      # bbox coordinates
-                     int(float(member[1][0].text)),  # x
-                     int(float(member[1][1].text)),  # y
-                     int(float(member[1][2].text)),  # width
-                     int(float(member[1][3].text))  # height
+                     float(member[1][0].text),  # x
+                     float(member[1][1].text),  # y
+                     float(member[1][2].tex),  # width
+                     float(member[1][3].text)  # height
                      )
             xml_list.append(value)
         counter += 1

@@ -26,19 +26,19 @@ printf "\nPIPELINE_CONFIG_PATH: %s\n" "$PIPELINE_CONFIG_PATH"
 printf "ORIGINAL_MODEL_DIR: %s\n\n" "$ORIGINAL_MODEL_DIR"
 printf "RETRAINED_MODEL_DIR: %s\n\n" "$RETRAINED_MODEL_DIR"
 
-# Evaluate retrained model
-printf "Evaluating retrained model...\n"
-python model_main_tf2.py \
-    --model_dir="${RETRAINED_MODEL_DIR}" \
-    --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
-    --checkpoint_dir="${RETRAINED_MODEL_DIR}"
-printf "Done evaluating retrained model!\n"
-
-## Evaluate original model
-#printf "Evaluating original model...\n"
+## Evaluate retrained model
+#printf "Evaluating retrained model...\n"
 #python model_main_tf2.py \
-#    --model_dir="${ORIGINAL_MODEL_DIR}" \
-#    --pipeline_config_path="${ORIGINAL_PIPELINE_CONFIG_PATH}" \
-#    --checkpoint_dir="${ORIGINAL_MODEL_CHECKPOINT_DIR}"
-#printf "Done evaluating original model!\n"
+#    --model_dir="${RETRAINED_MODEL_DIR}" \
+#    --pipeline_config_path="${PIPELINE_CONFIG_PATH}" \
+#    --checkpoint_dir="${RETRAINED_MODEL_DIR}"
+#printf "Done evaluating retrained model!\n"
+
+# Evaluate original model
+printf "Evaluating original model...\n"
+python model_main_tf2.py \
+    --model_dir="${ORIGINAL_MODEL_DIR}" \
+    --pipeline_config_path="${ORIGINAL_PIPELINE_CONFIG_PATH}" \
+    --checkpoint_dir="${ORIGINAL_MODEL_CHECKPOINT_DIR}"
+printf "Done evaluating original model!\n"
 

@@ -17,26 +17,59 @@ care about.
 
 # Instructions
 
-1. Edit the 
+## 1. Download COCO dataset
+Download the COCO dataset from [here](https://cocodataset.org/#download), and put it under the
+```.../ObjectDetectionTraining/data``` repository with the following directory structure:
+```
+Project Folder
+└───CreateTFRecords
+│   ...
+└───data
+    └───coco_2017   
+        └───images
+        │   └───train
+        │   │    │   000000000009.jpg
+        │   │    │   000000000025.jpg
+        │   │    │   ...
+        │   └───val   
+        │        │   000000000139.jpg
+        │        │   000000000285.jpg
+        │        │   ...
+        └───annotations
+            │   instances_train.json
+            │   instances_val.json
+```
 
-2. Unzip, and then place the model(s) into this directory. 
+## 2. Convert COCO (JSON) annotations to Pascal VOC (XML) annotations
+If the directory structure of the COCO dataset inside of this repository doesn't exactly match that of the above 
+diagram, modify the annotation filepath and output directory arguments in 
+[coco_to_voc_annotations.sh](), and then run the following command:
+```
+# Located in ObjectDetectionTraining/CreateTFRecords/alternate_tfrecord_creator/
+bash coco_to_voc_annotations.sh
+``` 
 
-3. For each model, you'll need to go into the model directory and find the *pipeline.config* file. This file is how you will tell the TensorFlow API how to set up your model. 
+## 3. Parse newly created XML annotations
+Now that we've converted our JSON annotations into XML annotations, we need to select the classes that we wish to 
+retrain our model on.
 
-4. Inside of [my_configuration_files](my_configuration_files), you'll find a file with the name *<insert_model_name>pipeline.config*. You should overwrite the contents of the file named *pipeline.config* inside of your new model directory with this pre-made file inside of my_configuration_files. 
+To do so, change the "class_subset" variable in [parse_xml_annotations.py]().
 
-5. After overwriting the *pipeline.config* files, there are a few lines that will need to be changed
-   - **label_map_path**: This should be changed to *path_on_your_machine/JetsonBenchmarking/model_retraining/data/mscoco_label_map.pbtxt*
-   - **input_path**: (Under train_input_reader) *path_on_your_machine/JetsonBenchmarking/model_retraining/data/coco_2017_train.tfrecord*
-   - **input_path**: (Under val_input_reader) *path_on_your_machine/JetsonBenchmarking/model_retraining/data/coco_2017_val.tfrecord*
-   
- 6. Lastly, to train your model, run the following command from the **TensorFlow GitHub repository** (Clone this repo [here](https://github.com/tensorflow/models))
- 
-```shell
- # From the tensorflow/models/research/ directory
-   python object_detection/train.py \
- --logtostderr \
- --train_dir=${PATH_TO_TRAIN_DIR} \
- --pipeline_config_path=${PATH_TO_YOUR_PIPELINE_CONFIG}
- ```
-  
+Then, run [parse_xml_annotations.py]() to parse the XML annotations with the following command:
+```
+# Located in ObjectDetectionTraining/CreateTFRecords/alternate_tfrecord_creator/
+python parse_xml_annotations.py
+```
+
+## 3. Convert parsed XML annotations to TFRecord
+Finally, we can create new TFRecord files containing our training and validation data with the [generate_tfrecord.sh]()
+bash script
+
+Before doing so, uncomment either the ```## Validation data ``` or ```## Training data ``` sections of the
+[generate_tfrecord.sh]() file for converting either the validation data or training data. 
+
+Then, run [generate_tfrecord.sh]() to convert the XML annotations into TFrecords
+```
+# Located in ObjectDetectionTraining/CreateTFRecords/alternate_tfrecord_creator/
+bash generate_tfrecord.sh
+```
