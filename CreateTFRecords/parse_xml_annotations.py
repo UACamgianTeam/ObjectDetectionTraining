@@ -18,10 +18,10 @@ def trim_xml_annotations(instance_annotations_path, class_subset):
 
     # Iterate recursively over annotation files in the dataset
     for root_name, dir_names, file_names in os.walk(instance_annotations_path, topdown=False):
-        for file_name in file_names:
+        print(f'Parsing files from {root_name}')
+        for i, file_name in enumerate(file_names):
             if os.path.join(root_name, file_name).endswith('.xml'):
                 with open(os.path.join(root_name, file_name),'r+') as annotation_file:
-
                     # Parse the annotation file
                     tree = etree.parse(annotation_file)
 
@@ -44,9 +44,9 @@ def trim_xml_annotations(instance_annotations_path, class_subset):
 
 
 def main():
-    class_subset = ['person']
-    instance_val_annotations_path = '../../data/coco_2017/annotations/instance_val_annotation'
-    instance_train_annotations_path = '../../data/coco_2017/annotations/instance_train_annotation'
+    class_subset = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat']
+    instance_val_annotations_path = '../data/coco_2017/annotations/instance_val_annotation'
+    instance_train_annotations_path = '../data/coco_2017/annotations/instance_train_annotation'
 
     # Trim the validation set, then the train set
     trim_xml_annotations(instance_annotations_path=instance_val_annotations_path,

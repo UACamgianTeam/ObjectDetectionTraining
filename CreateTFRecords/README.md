@@ -1,15 +1,8 @@
-# Alternate TFRecord Creator
+# CreateTFRecords
 
-This folder will house an alternate method for the creation of input data for training object detection models.
+This folder will house the method for the creation of input data for training object detection models.
 
-# How is this different from [tensorflow_object_detection_create_coco_tf_record](../tensorflow_object_detection_create_coco_tf_record)?
-
-In [tensorflow_object_detection_create_coco_tf_record](../tensorflow_object_detection_create_coco_tf_record), we download the COCO dataset in the standard COCO format.
-This format implies that all of the annotations for the train dataset are stored in one big JSON file, and likewise for the validation set. In that repo, we simply
-used that format and some tensorflow APIs to only select a subset of the class labels at runtime during our 
-[create_tf_record](../tensorflow_object_detection_create_coco_tf_record/create_tf_record) script.
-
-In this repository, we break this up into multiple steps.
+In this repository, we break the conversion from COCO annotations into TensorFlow TFRecord files into multiple steps.
 
 First, we convert the COCO-style JSON annotations into Pascal-VOC-style XML annotations. This separates the annotations for each class
 into separate folders, and allows us to easily select our class subset simply by deleting or omitting the class folders that we don't
@@ -66,7 +59,8 @@ Finally, we can create new TFRecord files containing our training and validation
 bash script
 
 Before doing so, uncomment either the ```## Validation data ``` or ```## Training data ``` sections of the
-[generate_tfrecord.sh]() file for converting either the validation data or training data. 
+[generate_tfrecord.sh]() file for converting either the validation data or training data, and make sure to
+change the arguments ```-l``` and ```-o``` to the label map path and output file name, respectively.
 
 Then, run [generate_tfrecord.sh]() to convert the XML annotations into TFrecords
 ```

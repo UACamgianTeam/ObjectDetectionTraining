@@ -98,7 +98,7 @@ def xml_to_csv_with_class_subdirs(path):
                      # bbox coordinates
                      float(member[1][0].text),  # x
                      float(member[1][1].text),  # y
-                     float(member[1][2].tex),  # width
+                     float(member[1][2].text),  # width
                      float(member[1][3].text)  # height
                      )
             xml_list.append(value)
@@ -204,11 +204,12 @@ def main(_):
     path = os.path.join(args.image_dir)
     examples = xml_to_csv_with_class_subdirs(args.xml_dir)
     grouped = split(examples, 'filename')
+    print(f'Creating TFRecord file: {args.output_path}')
     for group in grouped:
         tf_example = create_tf_example(group, path)
         writer.write(tf_example.SerializeToString())
     writer.close()
-    print('Successfully created the TFRecord file: {}'.format(args.output_path))
+    print(f'Successfully created the TFRecord file: {args.output_path}')
     if args.csv_path is not None:
         examples.to_csv(args.csv_path, index=None)
         print('Successfully created the CSV file: {}'.format(args.csv_path))

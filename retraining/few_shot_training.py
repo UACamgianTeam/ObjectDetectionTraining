@@ -113,7 +113,7 @@ def get_model_train_step_function(model, optimizer, vars_to_fine_tune):
             groundtruth_classes_list=groundtruth_classes_list)
         with tf.GradientTape() as tape:
             preprocessed_images = tf.concat(
-                [detection_model.preprocess(image_tensor)[0]
+                [model.preprocess(image_tensor)[0]
                  for image_tensor in image_tensors], axis=0)
             prediction_dict = model.predict(preprocessed_images, shapes)
             losses_dict = model.loss(prediction_dict, shapes)
@@ -183,6 +183,7 @@ def fine_tune_model(data_stub, train_step_function):
                   + ', loss=' + str(total_loss.numpy()), flush=True)
 
     print('Done fine-tuning!')
+
 
 
 if __name__ == "__main__":
