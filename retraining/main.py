@@ -3,20 +3,22 @@ import sys, getopt
 import logging
 import json
 
-from retraining.preprocess.construct_dicts import construct_dicts
-from retraining.preprocess.preprocess import preprocess_train_images, preprocess_test_images, \
-    map_annotations_to_windows, construct_category_index
-from retraining.retrain.retrain import retrain
-from retraining.utils.load_data import get_annotations
-from retraining.utils.plot import visualize_image_set
-from retraining.test.detect import run_inference
-from retraining.test.eval import restore_image_detections, evaluate_per_image, evaluate_per_window
+from preprocess.construct_dicts import construct_dicts
+from preprocess.preprocess import preprocess_train_images, preprocess_test_images, \
+    construct_category_index, get_unsliced_images_np
+from retrain.retrain import retrain
+from utils.load_data import get_annotations
+from utils.plot import visualize_image_set, visualize_unsliced_predictions
+from test.detect import run_inference
+from test.eval import restore_image_detections, evaluate_per_image, evaluate_per_window, \
+    write_validation_subsets, run_nms
 
 verbose = False
 debug = False
 
 desired_categories = {
-    'tennis-court'
+    'person',
+    8
 }
 
 
@@ -97,27 +99,40 @@ def main(argv):
             train_images_dict, train_file_name_dict, train_image_dir,
             train_annotations, category_index, win_set, verbose)
         # visualize the training set if you would like (only first 16 images)
-        if debug: visualize_image_set(train_images_np, gt_boxes, category_index)
+        if debug: visualize_image_set(train_images_np, gt_boxes, category_index, 'Training set')
         # retrain an existing object detection model on the new training set
         detection_model = retrain(train_images_np, gt_boxes, category_index, verbose)
         # open and preprocess test set
         (test_images_np, test_gt_boxes, test_images_dict) = preprocess_test_images(
             test_images_dict, test_file_name_dict, test_image_dir, test_annotations,
             category_index, win_set, verbose)
-        if debug: visualize_image_set(test_images_np, test_gt_boxes, category_index)
-        # run retrained detection model on test set and store results per window
+        if debug: visualize_image_set(test_images_np, test_gt_boxes, category_index, 'Test set')
+        # run retrained detection model on test set and store results per window in each image
         (test_images_dict, predicted_boxes, predicted_scores) = run_inference(
             test_images_np, test_images_dict, detection_model)
-        visualize_image_set(test_images_np, predicted_boxes, category_index, predicted_scores)
+
+        visualize_image_set(test_images_np, predicted_boxes, category_index, 'Predicted', predicted_scores)
         # restore window detections back to their original images
-        # test_images_dict  = restore_image_detections(test_images_dict, test_windows_dict)
+        print(test_images_dict)
+        (test_images_dict, predicted_image_boxes, predicted_image_scores) = restore_image_detections(test_images_dict)
+        print(test_images_dict)
+        # visualize restored detections
+        unsliced_test_images_np = get_unsliced_images_np(test_image_dir, test_file_name_dict)
+        visualize_unsliced_predictions(test_images_dict, category_index, unsliced_test_images_np)
+
         # TODO - run non-maximum suppression to combine similar detections
 
-        # create window annotations for test set based on image annotations
+        test_images_dict = run_nms(test_images_dict)
+
+        # Rewrite validation annotations with only the subset of desired categories for images and windows
+        write_validation_subsets(data_path, desired_categories, test_annotations)
 
         # evaluate results per window and per image
         # evaluate_per_window(data_path, test_windows_dict)
-        # evaluate_per_image(data_path, test_images_dict)
+        evaluate_per_image(data_path, test_images_dict)
+        evaluate_per_window(data_path, test_images_dict)
+
+        input('Press [enter] to end program.')
 
         return 0
     except Exception as err:

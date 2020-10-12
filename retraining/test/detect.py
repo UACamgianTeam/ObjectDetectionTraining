@@ -22,7 +22,6 @@ def run_inference(test_images_np: List, test_images_dict: dict, detection_model:
             test_images_dict[image_id]['windows'][window_id]['predicted_scores'] = detections['detection_scores'][
                 0].numpy()
 
-    print(test_images_dict)
     return (test_images_dict, predicted_boxes, predicted_scores)
 
 
@@ -35,7 +34,6 @@ def detect(input_tensor: any, detection_model: any) -> dict:
         Note that height and width can be anything since the image will be
         immediately resized according to the needs of the model within this
         function.
-      detection_model: An object detection model used for inference.
     Returns:
       A dict containing 3 Tensors (`detection_boxes`, `detection_classes`,
         and `detection_scores`).
