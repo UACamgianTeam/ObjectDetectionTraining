@@ -40,3 +40,9 @@ Then, change the ```pipeline.config``` file within your new TF2 Zoo model to con
 hyperparameters.
 
 Finally, run ```bash retrain_model.sh``` to retrain models
+
+## [UAVDT](https://sites.google.com/site/daviddo0323/projects/uavdt)
+
+
+
+1. Download [UAVDT-Benchmark-M](https://drive.google.com/file/d/1m8KA6oPIRK_Iwt9TYFquC87vBc_8wRVc/view)
