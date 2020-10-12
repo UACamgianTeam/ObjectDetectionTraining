@@ -12,7 +12,7 @@ can activate by running `source env/bin/activate`.
 ## Generating input data
 The Tensorflow API uses a special type of file for its input images: The [TFRecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format.
 
-A fully documented implementation of the conversion of COCO datasets into this proper TFRecord file format are found [here](tensorflow_object_detection_create_coco_tfrecord)
+A fully documented implementation of the conversion of COCO datasets into this proper TFRecord file format are found [here](CreateTFRecords).
 
 ## New datasets
 While the COCO dataset is vast, and contains many examples of each of the classes from the limited subset we care about (people, cars, trucks, etc.), the dataset doesn't contain many strange images from unusual angles, such as the overhead perspective of the objects captured by drones or surveillance footage. Here are some promising datasets that should help to mitigate this issue:
