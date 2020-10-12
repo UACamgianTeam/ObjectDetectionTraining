@@ -22,18 +22,21 @@ While the COCO dataset is vast, and contains many examples of each of the classe
 If one of these (or other similar) datasets proves to be unsuitable for the task, the tool [labelImg](https://github.com/tzutalin/labelImg) is an effective little application to create bounding boxes for image datasets. It's time consuming, but an accurate and effective tool for the job.
 
 ## Retraining Models
-In order to retrain models, you must first clone the [tensorflow/models](https://github.com/tensorflow/models) repository. 
+
+First, run ```./install_deps.sh``` to install necessary dependencies in a virtual environment. Afterwards, activate this virtual environment by running ```source env/bin/activate```.
+
+Then, download Tensorflow 2 Detection Model Zoo models from [here](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md)
+
+Then, untar the models and put them in [models/original_models]()
 ```
-git clone https://github.com/tensorflow/models.git
-```
-**NOTE:** There is a known issue with some of the scripts in the tensorflow/models repository that may cause errors upon training or evaluating models when using a CUDA-enabled GPU. These errors stem from the fact that, by default, TensorFlow may allocate all of the GPU memory to the model to be trained, causing some serious issues. Therefore, add the following lines to files in [tensorflow/models/object_detection](https://github.com/tensorflow/models/object_detection) or [tensorflow/models/object_detection/legacy](https://github.com/tensorflow/models/object_detection/legacy) if you see some errors along the lines of ```CUDNN_STATUS_INTERNAL_ERROR```:
-```
-# Fix a bug in TensorFlow by setting allow_growth to True to dynamically grow the memory used
-session_config = tf.ConfigProto()
-session_config.gpu_options.allow_growth = True
-session = tf.InteractiveSession(config=session_config)
+# Uncompress the model folder
+tar -xzfv <tf2_zoo_model_name>.tar.gz
+
+# Move the model folder to models/original_models
+mv <tf2_zoo_model_name> <your_path_to>/ObjectDetectionTraining/models/original_models
 ```
 
-Then, run ```./install_deps.sh``` to install necessary dependencies in a virtual environment. Afterwards, activate this virtual environment by running ```source env/bin/activate```.
+Then, change the ```pipeline.config``` file within your new TF2 Zoo model to configure settings such as # of classes, path to train/val data, and any other
+hyperparameters.
 
-Finally, run ```bash models/retrain_model.sh``` to retrain models, assuming that you've downloaded those models from the Tensorflow Model Zoo and put them in the folder '.../ObjectDetection/models/original_models'
+Finally, run ```bash retrain_model.sh``` to retrain models
