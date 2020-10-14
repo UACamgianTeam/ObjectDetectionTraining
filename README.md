@@ -43,6 +43,8 @@ Finally, run ```bash retrain_model.sh``` to retrain models
 
 ## [UAVDT](https://sites.google.com/site/daviddo0323/projects/uavdt)
 
+- See [here](resources/uavdt_readme.md) for information on the UAVDT dataset
 
-
-1. Download [UAVDT-Benchmark-M](https://drive.google.com/file/d/1m8KA6oPIRK_Iwt9TYFquC87vBc_8wRVc/view)
+- Download Links:
+    - [UAVDT-Benchmark-M](https://drive.google.com/file/d/1m8KA6oPIRK_Iwt9TYFquC87vBc_8wRVc/view)
+    - [UAVDT-Benchmark-S](https://drive.google.com/file/d/1661_Z_zL1HxInbsA2Mll9al-Ax6Py1rG/view)
