@@ -3,6 +3,7 @@
 **/*.tfrecord
 **/*.record
 coco_2017/
+data/PEViD-UHD/
 
 # Virtual environment
 env/
