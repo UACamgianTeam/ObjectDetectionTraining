@@ -3,6 +3,8 @@ import os
 import fnmatch
 from PIL import Image
 from absl import flags, app
+import xml.etree.ElementTree as ET
+import re
 
 """
 # FROM FORMAT
@@ -57,12 +59,15 @@ where each image x.jpg is accompanied by annotation in x.xml
 </annotation>
 """
 
-flags.DEFINE_string('input_gt_file', '../data/PEViD-UHD/walking_day_outdoor_3/Walking_day_outdoor_3_4K_trimmed.xgtf',
-                    'Path to input groundtruth bboxes file.\n This has the file extension '
-                    '".xgtf"')
-flags.DEFINE_string('output_folder', '../data/PEViD-UHD/walking_day_outdoor_3/', 'Path to output Pascal-VOC XML annotations')
-
+flags.DEFINE_string('input_gt_file', '../data/PEViD-UHD/walking_day_outdoor_3/Walking_day_outdoor_3_4K.xgtf',
+                    'Path to input groundtruth bboxes file.\n This has the file extension ".xgtf"')
+flags.DEFINE_string('output_folder', '../data/PEViD-UHD/walking_day_outdoor_3/',
+                    'Path to output Pascal-VOC XML annotations')
 FLAGS = flags.FLAGS
+
+label_map = {
+    'Person': 1
+}
 
 
 def format_header(image_name: str, folder_name: str, path_to_input: str, w: int, h: int) -> str:
@@ -125,6 +130,24 @@ def format_tail():
     return string
 
 
+def get_xmlns(xml_file: str) -> str:
+    """
+    Gets the xmlns for a given XML file.
+
+    Args:
+        xml_file: Path to an XML file
+
+    Returns:
+        xmlns: The default xmlns (XML namespace) which is prepended to every attribute in the ElementTree
+    """
+    root = ET.parse(xml_file).getroot()
+    xmlns = ''
+    m = re.search('{.*}', root.tag)
+    if m:
+        xmlns = m.group(0)
+    return xmlns
+
+
 def main(unused_argv) -> None:
     """
     Converts PEViD-UHD proprietary annotation to Pascal-VOC XML annotations
@@ -133,85 +156,105 @@ def main(unused_argv) -> None:
         None
     """
 
-    flags.mark_flags_as_required(['input_gt_file', 'output_folder'])
+    # Get root of "tree" representing the XML file
+    root = ET.parse(FLAGS.input_gt_file).getroot()
 
-    # Load groundtrouth boxes
-    gt_lines = list(open(FLAGS.input_gt_file))
-    gt_lines = [i.rstrip().split(' ') for i in gt_lines]
-    gt_lines = [[float(j) for j in i] for i in gt_lines]
-    print(gt_lines)
+    # Get the namespace prefix of the XML file
+    ns = get_xmlns(FLAGS.input_gt_file)
 
-    gt_per_frames = {}
-    for gt_line in gt_lines:
-        # [6.0, 1.0, 1012.15, 800.015, 1108.267, 1070.888]
-        # frameNumber, personNumber, bodyLeft, bodyTop, bodyRight, bodyBottom
-        # frameNumber, _, xmin, ymax, xmax, ymin
-        frame_num = int(gt_line[0])
-        if frame_num not in gt_per_frames.keys():
-            gt_per_frames[frame_num] = []
-        # gt_per_frames[frame_num].append( gt_line[2:5] )
+    # Find each object
+    for annotation_element in root.findall(f'./{ns}data/{ns}sourcefile/{ns}object'):
 
-        xmin = gt_line[2]
-        ymax = gt_line[5]
-        xmax = gt_line[4]
-        ymin = gt_line[3]
-        # print("xmin, ymin, xmax, ymax", xmin, ymin, xmax, ymax)
-        gt_per_frames[frame_num].append([xmin, ymin, xmax, ymax])
+        # Get class name and associated class id from annotation
+        class_name = annotation_element.attrib['name']
+        class_id = label_map[class_name]
 
-    # Target Folder
-    split_path = FLAGS.output_folder.split('/')
-    folder_name = split_path[-2]
-    path_to_input = FLAGS.output_folder[0:-(len(folder_name) + 1)]
+        print(f'class_id = {class_id}, class_name = {class_name}')
 
-    print("output_folder", FLAGS.output_folder)
-    print("folder_name", folder_name)
-    print("path_to_input", path_to_input)
+        # Find each bounding box
+        for bbox in annotation_element:
+            print(bbox.attrib)
 
-    # for image_name in image_names
-    files = sorted(os.listdir(FLAGS.output_folder))
-    image_names = fnmatch.filter(files, '*.jpg')
-    # print(image_names)
+    pass
 
-    # WIDTH AND HEIGHT is shared
-    first_image = FLAGS.output_folder + image_names[0]
-    img = Image.open(first_image)
-    w, h = img.size
-
-    # format_header(image_name, folder_name, path_to_input, w, h)
-    # format_object(xmin, ymin, xmax, ymax)
-    # format_object()
-    # format_tail()
-
-    keys = list(gt_per_frames.keys())
-    for key in keys:
-        print("frame", key, "(", len(gt_per_frames[key]), "): ", gt_per_frames[key])
-
-        objects_parameters = gt_per_frames[key]  # list of [xmin, ymin, xmax, ymax]
-
-        # key "6" to jpg name "0005.jpg" (maybe)
-        # key "161" to jpg name "0160.jpg"
-        number = key - 1
-
-        name = str(number).zfill(4)
-        image_name = name + ".jpg"
-        xml_name = name + ".xml"
-        print(image_name)
-        # print(objects_parameters)
-
-        string = ""
-        string += format_header(image_name, folder_name, path_to_input, w, h)
-
-        for object in objects_parameters:
-            xmin, ymin, xmax, ymax = object
-            string += format_object(xmin, ymin, xmax, ymax)
-
-        string += format_tail()
-
-        # now safe into filename.xml
-        # print(string)
-
-        with open(FLAGS.output_folder + xml_name, "w") as text_file:
-            text_file.write(string)
+    #
+    # # Load groundtrouth boxes
+    # gt_lines = list(open(FLAGS.input_gt_file))
+    # gt_lines = [i.rstrip().split(' ') for i in gt_lines]
+    # gt_lines = [[float(j) for j in i] for i in gt_lines]
+    # print(gt_lines)
+    #
+    # gt_per_frames = {}
+    # for gt_line in gt_lines:
+    #     # [6.0, 1.0, 1012.15, 800.015, 1108.267, 1070.888]
+    #     # frameNumber, personNumber, bodyLeft, bodyTop, bodyRight, bodyBottom
+    #     # frameNumber, _, xmin, ymax, xmax, ymin
+    #     frame_num = int(gt_line[0])
+    #     if frame_num not in gt_per_frames.keys():
+    #         gt_per_frames[frame_num] = []
+    #     # gt_per_frames[frame_num].append( gt_line[2:5] )
+    #
+    #     xmin = gt_line[2]
+    #     ymax = gt_line[5]
+    #     xmax = gt_line[4]
+    #     ymin = gt_line[3]
+    #     # print("xmin, ymin, xmax, ymax", xmin, ymin, xmax, ymax)
+    #     gt_per_frames[frame_num].append([xmin, ymin, xmax, ymax])
+    #
+    # # Target Folder
+    # split_path = FLAGS.output_folder.split('/')
+    # folder_name = split_path[-2]
+    # path_to_input = FLAGS.output_folder[0:-(len(folder_name) + 1)]
+    #
+    # print("output_folder", FLAGS.output_folder)
+    # print("folder_name", folder_name)
+    # print("path_to_input", path_to_input)
+    #
+    # # for image_name in image_names
+    # files = sorted(os.listdir(FLAGS.output_folder))
+    # image_names = fnmatch.filter(files, '*.jpg')
+    # # print(image_names)
+    #
+    # # WIDTH AND HEIGHT is shared
+    # first_image = FLAGS.output_folder + image_names[0]
+    # img = Image.open(first_image)
+    # w, h = img.size
+    #
+    # # format_header(image_name, folder_name, path_to_input, w, h)
+    # # format_object(xmin, ymin, xmax, ymax)
+    # # format_object()
+    # # format_tail()
+    #
+    # keys = list(gt_per_frames.keys())
+    # for key in keys:
+    #     print("frame", key, "(", len(gt_per_frames[key]), "): ", gt_per_frames[key])
+    #
+    #     objects_parameters = gt_per_frames[key]  # list of [xmin, ymin, xmax, ymax]
+    #
+    #     # key "6" to jpg name "0005.jpg" (maybe)
+    #     # key "161" to jpg name "0160.jpg"
+    #     number = key - 1
+    #
+    #     name = str(number).zfill(4)
+    #     image_name = name + ".jpg"
+    #     xml_name = name + ".xml"
+    #     print(image_name)
+    #     # print(objects_parameters)
+    #
+    #     string = ""
+    #     string += format_header(image_name, folder_name, path_to_input, w, h)
+    #
+    #     for object in objects_parameters:
+    #         xmin, ymin, xmax, ymax = object
+    #         string += format_object(xmin, ymin, xmax, ymax)
+    #
+    #     string += format_tail()
+    #
+    #     # now safe into filename.xml
+    #     # print(string)
+    #
+    #     with open(FLAGS.output_folder + xml_name, "w") as text_file:
+    #         text_file.write(string)
 
 
 if __name__ == "__main__":
