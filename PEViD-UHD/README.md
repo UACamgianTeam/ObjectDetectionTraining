@@ -28,20 +28,22 @@ annotations.
 and ```Walking_day_outdoor_3_original.mp4```, create a subdirectory inside of [data/PEViD-UHD](../data/PEViD-UHD)
 specifically for that video, such as ```Walking_day_outdoor_3/```. 
 
-2. Then create a copy of each ```.xgtf``` annotation file, and append ```_trimmed``` at the end of the filename.
-    - Example: Create a copy of ```Walking_day_outdoor_3_4K.xgtf``` named ```Walking_day_outdoor_3_4K_trimmed.xgtf```
+2. Create new folders for image frames and Pascal-VOC XML annotations, respectively:
+    ```
+    # From <your_path>/ObjectDetectionTraining
+    mkdir data/PEViD-UHD/<video_name>/frames
+    mkdir data/PEViD-UHD/<video_name>/frames
+    ```
     
-3. In the new ```_trimmed.xgtf``` file, remove everything outside of the ```<data>...<data/>``` attribute
-    
-3. Convert each video to frames at 30 fps:
+2. Convert each video to frames at 30 fps:
     ```
     ffmpeg -i <path_to_video_from_pevid-uhd>.mp4 -vf fps=30 frame_%d.jpg
     ```
 
-4. Change the variables ```input_gt_file``` and ```output_folder``` paths of your PEViD-UHD annotations 
+3. Change the variables ```input_gt_file``` and ```output_folder``` paths of your PEViD-UHD annotations 
 in [convert_pevid_to_voc.sh]() to match the annotations you want to extract
 
-5. Run the [convert_pevid_to_voc.sh]() to produce Pascal-VOC XML annotations:
+4. Run the [convert_pevid_to_voc.sh]() to produce Pascal-VOC XML annotations:
     ```
     # From <your_path>/ObjectDetectionTraining
     bash PEViD-UHD/convert_pevid_to_voc.sh

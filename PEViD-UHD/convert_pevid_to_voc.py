@@ -5,6 +5,7 @@ from PIL import Image
 from absl import flags, app
 import xml.etree.ElementTree as ET
 import re
+from typing import List
 
 """
 # FROM FORMAT
@@ -61,6 +62,8 @@ where each image x.jpg is accompanied by annotation in x.xml
 
 flags.DEFINE_string('input_gt_file', '../data/PEViD-UHD/walking_day_outdoor_3/Walking_day_outdoor_3_4K.xgtf',
                     'Path to input groundtruth bboxes file.\n This has the file extension ".xgtf"')
+flags.DEFINE_string('file_prefix', 'frame_',
+                    'Perfix for output Pascal-VOC XML annotations')
 flags.DEFINE_string('output_folder', '../data/PEViD-UHD/walking_day_outdoor_3/',
                     'Path to output Pascal-VOC XML annotations')
 FLAGS = flags.FLAGS
@@ -68,66 +71,6 @@ FLAGS = flags.FLAGS
 label_map = {
     'Person': 1
 }
-
-
-def format_header(image_name: str, folder_name: str, path_to_input: str, w: int, h: int) -> str:
-    path = path_to_input + folder_name + "/" + image_name
-    width = str(w)
-    height = str(h)
-
-    string = """<annotation>
-	<folder>""" + folder_name + """</folder>
-	<filename>""" + image_name + """</filename>
-	<path>""" + path + """</path>
-	<source>
-		<database>Unknown</database>
-	</source>
-	<size>
-		<width>""" + width + """</width>
-		<height>""" + height + """</height>
-		<depth>3</depth>
-	</size>
-	<segmented>0</segmented>"""
-
-    # print(string)
-    return string
-
-
-def format_object(xmin: int, ymin: int, xmax: int, ymax: int) -> str:
-    xmin = int(xmin)
-    ymin = int(ymin)
-    xmax = int(xmax)
-    ymax = int(ymax)
-    xmin = str(xmin)
-    ymin = str(ymin)
-    xmax = str(xmax)
-    ymax = str(ymax)
-
-    name = "person"
-
-    string = """
-    <object>
-		<name>""" + name + """</name>
-		<pose>Unspecified</pose>
-		<truncated>0</truncated>
-		<difficult>0</difficult>
-		<bndbox>
-			<xmin>""" + xmin + """</xmin>
-			<ymin>""" + ymin + """</ymin>
-			<xmax>""" + xmax + """</xmax>
-			<ymax>""" + ymax + """</ymax>
-		</bndbox>
-	</object>"""
-
-    # print(string)
-    return string
-
-
-def format_tail():
-    string = """
-</annotation>"""
-    # print(string)
-    return string
 
 
 def get_xmlns(xml_file: str) -> str:
@@ -148,6 +91,201 @@ def get_xmlns(xml_file: str) -> str:
     return xmlns
 
 
+def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_prefix: int, output_folder: int,
+                         height: int, width: int) -> None:
+    """
+    Converts a given bounding box to an XML file
+
+    Args:
+        bbox: An ET.Element object representing a single bounding box element in XML
+        class_name: The name of the class for this bounding box
+        class_id: The class ID for this bounding box
+        file_prefix: The string to prepend to the output XML files
+        output_folder: The output folder for saving output XML files
+        height: The height in pixels of the input frames
+        width: The width in pixels of the input frames
+
+    Returns:
+        None
+
+    """
+
+    # Get the start and end frames of this bbox
+    start_frame, end_frame = tuple(int(item) for item in bbox.attrib['framespan'].split(':'))
+
+    # Get the PEViD-UHD coordinates from this box
+    pevid_coordinates = [int(bbox.attrib['height']), int(bbox.attrib['width']), int(bbox.attrib['x']),
+                         int(bbox.attrib['y'])]
+    # print(f'pevid_coordinates: {pevid_coordinates}')
+
+    # Convert the PEViD-UHD coordinates to Pascal-VOC coordinates
+    pascal_coordinates = pevid_coordinates_to_voc(pevid_coordinates)
+    # print(f'pascal_coordinates: {pascal_coordinates}')
+
+    # Iterate over every frame for this bbox, convert to Pascal-VOC, and save to files
+    for frame_num in range(start_frame, end_frame + 1):
+        filename = file_prefix + str(frame_num) + '.xml'
+        output_file = os.path.join(output_folder, filename)
+        if not os.path.exists(output_file):
+            xml = construct_xml_document(pascal_coordinates, class_name, class_id, output_file, height, width)
+        else:
+            xml = append_to_xml_document(pascal_coordinates, class_name, class_id, output_file)
+        with open(output_file, "w+") as file:
+            xml.write(output_file)
+
+
+def get_folder_or_file_name(path: str) -> str:
+    """
+    Extracts the last folder or file name from a path
+    Args:
+        path: The entire path to a folder or a file
+
+    Returns:
+        folder_name: The last folder or file name from the path
+    """
+    without_extra_slash = os.path.normpath(path)
+    last_part = os.path.basename(without_extra_slash)
+    return last_part
+
+
+def append_to_xml_document(pascal_coordinates: List[int], class_name: str, class_id: int,
+                           output_file_path: str) -> ET.ElementTree:
+    """
+    Appends a new bounding box to an already-existing Pascal-VOC XML annotation file
+    Args:
+        pascal_coordinates: The Pascal-VOC bounding box
+            coordinates (x-top left, y-top left, x-bottom right, y-bottom right)
+        class_name: The class name of the annotated object
+        class_id: The class ID of the annotated object
+        output_file_path: The path + filename of the XML file to be created (the frame number is embedded within the
+            output filename)
+
+
+    Returns:
+        xml_tree: The tree representing the XML annotation file
+    """
+    # Get root of "tree" representing the XML file
+    root = ET.parse(output_file_path).getroot()
+
+    # Create new object element as <object>...</object>
+    object_element = ET.Element("object")
+    root.append(object_element)
+    # Create name subelement
+    name_element = ET.SubElement(object_element, "name")
+    name_element.text = class_name
+    # Create bounding box subelement and add coordinates
+    bndbox_element = ET.SubElement(object_element, "bndbox")
+    xmin_element = ET.SubElement(bndbox_element, "xmin")
+    xmin_element.text = str(pascal_coordinates[0])
+    ymin_element = ET.SubElement(bndbox_element, "ymin")
+    ymin_element.text = str(pascal_coordinates[3])
+    xmax_element = ET.SubElement(bndbox_element, "xmax")
+    xmax_element.text = str(pascal_coordinates[2])
+    ymax_element = ET.SubElement(bndbox_element, "ymax")
+    ymax_element.text = str(pascal_coordinates[1])
+
+    xml_tree = ET.ElementTree(root)
+    return xml_tree
+
+
+def construct_xml_document(pascal_coordinates: List[int], class_name: str, class_id: int, output_file_path: str,
+                           height: int, width: int) -> ET.ElementTree:
+    """
+    Creates a new XML annotation file for a particular frame, and adds one bounding box
+
+    Args:
+        pascal_coordinates: The Pascal-VOC bounding box
+            coordinates (x-top left, y-top left, x-bottom right, y-bottom right)
+        class_name: The class name of the annotated object
+        class_id: The class ID of the annotated object
+        output_file_path: The path + filename of the XML file to be created (the frame number is embedded within the
+            output filename)
+        height: The height in pixels of each input frame
+        width: The width in pixels of each input frame
+
+    Returns:
+        xml_tree: The tree representing the XML annotation file
+    """
+    # Create root element as <annotation>...</annotation>
+    root = ET.Element("annotation")
+
+    # Create folder element as <folder>...</folder>
+    folder_element = ET.Element("folder")
+    folder_element.text = get_folder_or_file_name(FLAGS.output_folder)
+    root.append(folder_element)
+
+    # Create filename element as <filename>...</filename>
+    filename_element = ET.Element("filename")
+    filename_element.text = get_folder_or_file_name(output_file_path)
+    root.append(filename_element)
+
+    # Create source element as <source>...</source>
+    source_element = ET.Element("source")
+    root.append(source_element)
+    # Add subelements to <source> element
+    database_element = ET.SubElement(source_element, "database")
+    database_element.text = "PEViD-UHD"
+    annotation_element = ET.SubElement(source_element, "annotation")
+    annotation_element.text = "PEViD-UHD"
+    image_element = ET.SubElement(source_element, "image")
+    image_element.text = "EPFL"
+    url_element = ET.SubElement(source_element, "url")
+    url_element.text = "https://alabama.app.box.com/folder/124516925859"
+
+    # Create size element as <size>...</size>
+    size_element = ET.Element("size")
+    root.append(size_element)
+    # Add subelemnts to <size> element
+    width_element = ET.SubElement(size_element, "width")
+    width_element.text = str(width)
+    height_element = ET.SubElement(size_element, "height")
+    height_element.text = str(height)
+    depth_element = ET.SubElement(size_element, "depth")
+    depth_element.text = str(3)
+
+    # Create segmented element as <segmented>...</segmented>
+    segmented_element = ET.Element("segmented")
+    segmented_element.text = str(0)
+    root.append(segmented_element)
+
+    # Create object element as <object>...</object>
+    object_element = ET.Element("object")
+    root.append(object_element)
+    # Create name subelement
+    name_element = ET.SubElement(object_element, "name")
+    name_element.text = class_name
+    # Create bounding box subelement and add coordinates
+    bndbox_element = ET.SubElement(object_element, "bndbox")
+    xmin_element = ET.SubElement(bndbox_element, "xmin")
+    xmin_element.text = str(pascal_coordinates[0])
+    ymin_element = ET.SubElement(bndbox_element, "ymin")
+    ymin_element.text = str(pascal_coordinates[3])
+    xmax_element = ET.SubElement(bndbox_element, "xmax")
+    xmax_element.text = str(pascal_coordinates[2])
+    ymax_element = ET.SubElement(bndbox_element, "ymax")
+    ymax_element.text = str(pascal_coordinates[1])
+
+    xml_tree = ET.ElementTree(root)
+    return xml_tree
+
+
+def pevid_coordinates_to_voc(pevid_coordinates: List[int]) -> List[int]:
+    """
+    Converts PEViD-UHD coordinates (height, width, x, y) to
+    Pascal-VOC coordinates (x-top left, y-top left, x-bottom right, y-bottom right)
+    Args:
+        pevid_coordinates: Bounding box coordinates for an object in the PEViD-UHD style
+
+    Returns:
+        voc_coordinates: The Pascal-VOC style coordinates for the object
+    """
+    x_top_left = pevid_coordinates[2]
+    y_top_left = pevid_coordinates[3] + pevid_coordinates[0]
+    x_bottom_right = pevid_coordinates[2] + pevid_coordinates[1]
+    y_bottom_right = pevid_coordinates[3]
+    return [x_top_left, y_top_left, x_bottom_right, y_bottom_right]
+
+
 def main(unused_argv) -> None:
     """
     Converts PEViD-UHD proprietary annotation to Pascal-VOC XML annotations
@@ -155,12 +293,15 @@ def main(unused_argv) -> None:
     Returns:
         None
     """
-
     # Get root of "tree" representing the XML file
     root = ET.parse(FLAGS.input_gt_file).getroot()
 
     # Get the namespace prefix of the XML file
     ns = get_xmlns(FLAGS.input_gt_file)
+
+    # Find height and width in pixels
+    height = root.find(f"./{ns}data/{ns}sourcefile/{ns}file/*[@name='V-FRAME-SIZE']").find('*').attrib['value']
+    width = root.find(f"./{ns}data/{ns}sourcefile/{ns}file/*[@name='H-FRAME-SIZE']").find('*').attrib['value']
 
     # Find each object
     for annotation_element in root.findall(f'./{ns}data/{ns}sourcefile/{ns}object'):
@@ -168,93 +309,11 @@ def main(unused_argv) -> None:
         # Get class name and associated class id from annotation
         class_name = annotation_element.attrib['name']
         class_id = label_map[class_name]
+        # print(f'class_id = {class_id}, class_name = {class_name}')
 
-        print(f'class_id = {class_id}, class_name = {class_name}')
-
-        # Find each bounding box
-        for bbox in annotation_element:
-            print(bbox.attrib)
-
-    pass
-
-    #
-    # # Load groundtrouth boxes
-    # gt_lines = list(open(FLAGS.input_gt_file))
-    # gt_lines = [i.rstrip().split(' ') for i in gt_lines]
-    # gt_lines = [[float(j) for j in i] for i in gt_lines]
-    # print(gt_lines)
-    #
-    # gt_per_frames = {}
-    # for gt_line in gt_lines:
-    #     # [6.0, 1.0, 1012.15, 800.015, 1108.267, 1070.888]
-    #     # frameNumber, personNumber, bodyLeft, bodyTop, bodyRight, bodyBottom
-    #     # frameNumber, _, xmin, ymax, xmax, ymin
-    #     frame_num = int(gt_line[0])
-    #     if frame_num not in gt_per_frames.keys():
-    #         gt_per_frames[frame_num] = []
-    #     # gt_per_frames[frame_num].append( gt_line[2:5] )
-    #
-    #     xmin = gt_line[2]
-    #     ymax = gt_line[5]
-    #     xmax = gt_line[4]
-    #     ymin = gt_line[3]
-    #     # print("xmin, ymin, xmax, ymax", xmin, ymin, xmax, ymax)
-    #     gt_per_frames[frame_num].append([xmin, ymin, xmax, ymax])
-    #
-    # # Target Folder
-    # split_path = FLAGS.output_folder.split('/')
-    # folder_name = split_path[-2]
-    # path_to_input = FLAGS.output_folder[0:-(len(folder_name) + 1)]
-    #
-    # print("output_folder", FLAGS.output_folder)
-    # print("folder_name", folder_name)
-    # print("path_to_input", path_to_input)
-    #
-    # # for image_name in image_names
-    # files = sorted(os.listdir(FLAGS.output_folder))
-    # image_names = fnmatch.filter(files, '*.jpg')
-    # # print(image_names)
-    #
-    # # WIDTH AND HEIGHT is shared
-    # first_image = FLAGS.output_folder + image_names[0]
-    # img = Image.open(first_image)
-    # w, h = img.size
-    #
-    # # format_header(image_name, folder_name, path_to_input, w, h)
-    # # format_object(xmin, ymin, xmax, ymax)
-    # # format_object()
-    # # format_tail()
-    #
-    # keys = list(gt_per_frames.keys())
-    # for key in keys:
-    #     print("frame", key, "(", len(gt_per_frames[key]), "): ", gt_per_frames[key])
-    #
-    #     objects_parameters = gt_per_frames[key]  # list of [xmin, ymin, xmax, ymax]
-    #
-    #     # key "6" to jpg name "0005.jpg" (maybe)
-    #     # key "161" to jpg name "0160.jpg"
-    #     number = key - 1
-    #
-    #     name = str(number).zfill(4)
-    #     image_name = name + ".jpg"
-    #     xml_name = name + ".xml"
-    #     print(image_name)
-    #     # print(objects_parameters)
-    #
-    #     string = ""
-    #     string += format_header(image_name, folder_name, path_to_input, w, h)
-    #
-    #     for object in objects_parameters:
-    #         xmin, ymin, xmax, ymax = object
-    #         string += format_object(xmin, ymin, xmax, ymax)
-    #
-    #     string += format_tail()
-    #
-    #     # now safe into filename.xml
-    #     # print(string)
-    #
-    #     with open(FLAGS.output_folder + xml_name, "w") as text_file:
-    #         text_file.write(string)
+        # Find each bounding box across frames and convert to Pascal-VOC XML
+        for bbox in annotation_element.find(f"./*[@name='box']"):
+            convert_bbox_to_xmls(bbox, class_name, class_id, FLAGS.file_prefix, FLAGS.output_folder, height, width)
 
 
 if __name__ == "__main__":
