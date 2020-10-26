@@ -32,7 +32,7 @@ specifically for that video, such as ```Walking_day_outdoor_3/```.
     ```
     # From <your_path>/ObjectDetectionTraining
     mkdir data/PEViD-UHD/<video_name>/frames
-    mkdir data/PEViD-UHD/<video_name>/frames
+    mkdir data/PEViD-UHD/<video_name>/annotations
     ```
     
 2. Convert each video to frames at 30 fps:
