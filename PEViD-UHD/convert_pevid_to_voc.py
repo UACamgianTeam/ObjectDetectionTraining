@@ -6,6 +6,7 @@ from absl import flags, app
 import xml.etree.ElementTree as ET
 import re
 from typing import List
+from xml.dom import minidom
 
 """
 # FROM FORMAT
@@ -31,32 +32,32 @@ where all annotations for all frames in a video are stored in one .xgtf file
 # TO FORMAT
 where each image x.jpg is accompanied by annotation in x.xml
 <annotation>
-	<folder>frames_20171126</folder>
-	<filename>0001.jpg</filename>
-	<path>/home/ekmek/intership_project/video_parser_v1/_videos_to_test/PittsMine/input/frames_20171126/0001.jpg</path>
-	<source>
-		<database>Unknown</database>
-	</source>
-	<size>
-		<width>3840</width>
-		<height>2160</height>
-		<depth>3</depth>
-	</size>
-	<segmented>0</segmented>
+    <folder>frames_20171126</folder>
+    <filename>0001.jpg</filename>
+    <path>/home/ekmek/intership_project/video_parser_v1/_videos_to_test/PittsMine/input/frames_20171126/0001.jpg</path>
+    <source>
+        <database>Unknown</database>
+    </source>
+    <size>
+        <width>3840</width>
+        <height>2160</height>
+        <depth>3</depth>
+    </size>
+    <segmented>0</segmented>
 
-	<object>
-		<name>person</name>
-		<pose>Unspecified</pose>
-		<truncated>0</truncated>
-		<difficult>0</difficult>
-		<bndbox>
-			<xmin>52</xmin>
-			<ymin>883</ymin>
-			<xmax>172</xmax>
-			<ymax>1213</ymax>
-		</bndbox>
-	</object>
-	... # multiple objects <object> ... </object>
+    <object>
+        <name>person</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>52</xmin>
+            <ymin>883</ymin>
+            <xmax>172</xmax>
+            <ymax>1213</ymax>
+        </bndbox>
+    </object>
+    ... # multiple objects <object> ... </object>
 </annotation>
 """
 
@@ -69,7 +70,8 @@ flags.DEFINE_string('output_folder', '../data/PEViD-UHD/walking_day_outdoor_3/',
 FLAGS = flags.FLAGS
 
 label_map = {
-    'Person': 1
+    'Person': 1,
+    'Accessory': 2
 }
 
 
@@ -92,9 +94,9 @@ def get_xmlns(xml_file: str) -> str:
 
 
 def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_prefix: int, output_folder: int,
-                         height: int, width: int) -> None:
+                         height: int, width: int, prettify: bool = True) -> None:
     """
-    Converts a given bounding box to an XML file
+    Converts a given bounding box to an XML file and prettifies the output for human-readability
 
     Args:
         bbox: An ET.Element object representing a single bounding box element in XML
@@ -104,6 +106,7 @@ def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_
         output_folder: The output folder for saving output XML files
         height: The height in pixels of the input frames
         width: The width in pixels of the input frames
+        prettify: True if we wish to pretty-print the saved XML document
 
     Returns:
         None
@@ -130,7 +133,14 @@ def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_
             xml = construct_xml_document(pascal_coordinates, class_name, class_id, output_file, height, width)
         else:
             xml = append_to_xml_document(pascal_coordinates, class_name, class_id, output_file)
-        with open(output_file, "w+") as file:
+
+        # Write the XML annotation to a file
+        if prettify:
+            pass
+            xmlstr = minidom.parseString(ET.tostring(xml)).toprettyxml(indent="   ")
+            with open(output_file, "w+") as file:
+                file.write(xmlstr.encode('utf-8'))
+        else:
             xml.write(output_file)
 
 
