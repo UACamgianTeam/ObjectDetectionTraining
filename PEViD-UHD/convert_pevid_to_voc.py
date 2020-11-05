@@ -61,11 +61,11 @@ where each image x.jpg is accompanied by annotation in x.xml
 </annotation>
 """
 
-flags.DEFINE_string('input_gt_file', '../data/PEViD-UHD/walking_day_outdoor_3/Walking_day_outdoor_3_4K.xgtf',
+flags.DEFINE_string('input_gt_file', "../data/PEViD-UHD/fighting_day_outdoor_4/Fighting_day_outdoor_4_4K.xgtf",
                     'Path to input groundtruth bboxes file.\n This has the file extension ".xgtf"')
 flags.DEFINE_string('file_prefix', 'frame_',
                     'Perfix for output Pascal-VOC XML annotations')
-flags.DEFINE_string('output_folder', '../data/PEViD-UHD/walking_day_outdoor_3/',
+flags.DEFINE_string('output_folder', '../data/PEViD-UHD/fighting_day_outdoor_4/annotations',
                     'Path to output Pascal-VOC XML annotations')
 FLAGS = flags.FLAGS
 
@@ -93,6 +93,31 @@ def get_xmlns(xml_file: str) -> str:
     return xmlns
 
 
+def upscale_pascal_coordinates(pevid_coordinates: List[int], height_scaling_proportion: float,
+                               width_scaling_proportion: float):
+    """
+    Upscales Pascal-VOC coordinates to a a greater resolution (usually to 4K)
+
+    Args:
+        pevid_coordinates: The Pascal-VOC bounding box
+            coordinates (x-top left, y-top left, x-bottom right, y-bottom right)
+        height_scaling_proportion: The proportion with which to scale the vertical pixels
+        width_scaling_proportion: The proportion with which to scale the horizontal pixels
+
+    Returns:
+        pascal_coordinates: The upscaled Pascal-VOC bounding box coordinates
+            (x-top left, y-top left, x-bottom right, y-bottom right)
+    """
+    # Upscale the y-top left and y-bottom right
+    pevid_coordinates[1] = int(pevid_coordinates[1] * height_scaling_proportion)
+    pevid_coordinates[3] = int(pevid_coordinates[3] * height_scaling_proportion)
+    # Upscale the x-top left and x-bottom right
+    pevid_coordinates[0] = int(pevid_coordinates[0] * width_scaling_proportion)
+    pevid_coordinates[2] = int(pevid_coordinates[2] * width_scaling_proportion)
+
+    return pevid_coordinates
+
+
 def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_prefix: int, output_folder: int,
                          height: int, width: int, prettify: bool = True) -> None:
     """
@@ -113,6 +138,12 @@ def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_
 
     """
 
+    # Get proportions with which to scale bounding box coordinates
+    width_4k = 3840
+    height_4k = 2160
+    width_scaling_proportion = width_4k / int(width)
+    height_scaling_proportion = height_4k / int(height)
+
     # Get the start and end frames of this bbox
     start_frame, end_frame = tuple(int(item) for item in bbox.attrib['framespan'].split(':'))
 
@@ -125,21 +156,26 @@ def convert_bbox_to_xmls(bbox: ET.Element, class_name: str, class_id: int, file_
     pascal_coordinates = pevid_coordinates_to_voc(pevid_coordinates)
     # print(f'pascal_coordinates: {pascal_coordinates}')
 
+    # Upscale the Pascal VOC coordinates so that they match 4K
+    pascal_coordinates = upscale_pascal_coordinates(pascal_coordinates,
+                                                    height_scaling_proportion,
+                                                    width_scaling_proportion)
+
     # Iterate over every frame for this bbox, convert to Pascal-VOC, and save to files
     for frame_num in range(start_frame, end_frame + 1):
         filename = file_prefix + str(frame_num) + '.xml'
         output_file = os.path.join(output_folder, filename)
         if not os.path.exists(output_file):
-            xml = construct_xml_document(pascal_coordinates, class_name, class_id, output_file, height, width)
+            xml = construct_xml_document(pascal_coordinates, class_name, class_id, output_file, height_4k, width_4k)
         else:
             xml = append_to_xml_document(pascal_coordinates, class_name, class_id, output_file)
 
         # Write the XML annotation to a file
         if prettify:
             pass
-            xmlstr = minidom.parseString(ET.tostring(xml)).toprettyxml(indent="   ")
+            xmlstr = minidom.parseString(ET.tostring(xml.getroot())).toprettyxml(indent="   ")
             with open(output_file, "w+") as file:
-                file.write(xmlstr.encode('utf-8'))
+                file.write(xmlstr)
         else:
             xml.write(output_file)
 
