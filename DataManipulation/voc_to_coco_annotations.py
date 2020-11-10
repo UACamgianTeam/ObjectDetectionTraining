@@ -1,149 +1,157 @@
+#!/usr/bin/python
+
+# pip install lxml
+
+import sys
 import os
-import argparse
 import json
 import xml.etree.ElementTree as ET
-from typing import Dict, List
-from tqdm import tqdm
-import re
+import glob
 
-def get_label2id(labels_path: str) -> Dict[str, int]:
-    """id is 1 start"""
-    with open(labels_path, 'r') as f:
-        labels_str = f.read().split()
-    labels_ids = list(range(1, len(labels_str)+1))
-    return dict(zip(labels_str, labels_ids))
+START_BOUNDING_BOX_ID = 1
+PRE_DEFINE_CATEGORIES = None
 
 
-def get_annpaths(ann_dir_path: str = None,
-                 ann_ids_path: str = None,
-                 ext: str = '',
-                 annpaths_list_path: str = None) -> List[str]:
-    # If use annotation paths list
-    if annpaths_list_path is not None:
-        with open(annpaths_list_path, 'r') as f:
-            ann_paths = f.read().split()
-        return ann_paths
-
-    # If use annotaion ids list
-    ext_with_dot = '.' + ext if ext != '' else ''
-    with open(ann_ids_path, 'r') as f:
-        ann_ids = f.read().split()
-    ann_paths = [os.path.join(ann_dir_path, aid+ext_with_dot) for aid in ann_ids]
-    return ann_paths
+# If necessary, pre-define category and its id
+#  PRE_DEFINE_CATEGORIES = {"aeroplane": 1, "bicycle": 2, "bird": 3, "boat": 4,
+#  "bottle":5, "bus": 6, "car": 7, "cat": 8, "chair": 9,
+#  "cow": 10, "diningtable": 11, "dog": 12, "horse": 13,
+#  "motorbike": 14, "person": 15, "pottedplant": 16,
+#  "sheep": 17, "sofa": 18, "train": 19, "tvmonitor": 20}
 
 
-def get_image_info(annotation_root, extract_num_from_imgid=True):
-    path = annotation_root.findtext('path')
-    if path is None:
-        filename = annotation_root.findtext('filename')
+def get(root, name):
+    vars = root.findall(name)
+    return vars
+
+
+def get_and_check(root, name, length):
+    vars = root.findall(name)
+    if len(vars) == 0:
+        raise ValueError("Can not find %s in %s." % (name, root.tag))
+    if length > 0 and len(vars) != length:
+        raise ValueError(
+            "The size of %s is supposed to be %d, but is %d."
+            % (name, length, len(vars))
+        )
+    if length == 1:
+        vars = vars[0]
+    return vars
+
+
+def get_filename_as_int(filename):
+    try:
+        filename = filename.replace("\\", "/")
+        filename = os.path.splitext(os.path.basename(filename))[0]
+        return int(filename)
+    except:
+        raise ValueError("Filename %s is supposed to be an integer." % (filename))
+
+
+def get_categories(xml_files):
+    """
+    Generate category name to id mapping from a list of xml files.
+
+    Arguments:
+        xml_files {list} -- A list of xml file paths.
+
+    Returns:
+        dict -- category name to id mapping.
+    """
+    classes_names = []
+    for xml_file in xml_files:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        for member in root.findall("object"):
+            classes_names.append(member[0].text)
+    classes_names = list(set(classes_names))
+    classes_names.sort()
+    return {name: i for i, name in enumerate(classes_names)}
+
+
+def convert(xml_files, json_file):
+    json_dict = {"images": [], "type": "instances", "annotations": [], "categories": []}
+    if PRE_DEFINE_CATEGORIES is not None:
+        categories = PRE_DEFINE_CATEGORIES
     else:
-        filename = os.path.basename(path)
-    img_name = os.path.basename(filename)
-    img_id = os.path.splitext(img_name)[0]
-    if extract_num_from_imgid and isinstance(img_id, str):
-        img_id = int(re.findall(r'\d+', img_id)[0])
-
-    size = annotation_root.find('size')
-    width = int(size.findtext('width'))
-    height = int(size.findtext('height'))
-
-    image_info = {
-        'file_name': filename,
-        'height': height,
-        'width': width,
-        'id': img_id
-    }
-    return image_info
-
-
-def get_coco_annotation_from_obj(obj, label2id):
-    label = obj.findtext('name')
-    assert label in label2id, f"Error: {label} is not in label2id !"
-    category_id = label2id[label]
-    bndbox = obj.find('bndbox')
-    xmin = int(bndbox.findtext('xmin')) - 1
-    ymin = int(bndbox.findtext('ymin')) - 1
-    xmax = int(bndbox.findtext('xmax'))
-    ymax = int(bndbox.findtext('ymax'))
-    assert xmax > xmin and ymax > ymin, f"Box size error !: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
-    o_width = xmax - xmin
-    o_height = ymax - ymin
-    ann = {
-        'area': o_width * o_height,
-        'iscrowd': 0,
-        'bbox': [xmin, ymin, o_width, o_height],
-        'category_id': category_id,
-        'ignore': 0,
-        'segmentation': []  # This script is not for segmentation
-    }
-    return ann
-
-
-def convert_xmls_to_cocojson(annotation_paths: List[str],
-                             label2id: Dict[str, int],
-                             output_jsonpath: str,
-                             extract_num_from_imgid: bool = True):
-    output_json_dict = {
-        "images": [],
-        "type": "instances",
-        "annotations": [],
-        "categories": []
-    }
-    bnd_id = 1  # START_BOUNDING_BOX_ID, TODO input as args ?
-    print('Start converting !')
-    for a_path in tqdm(annotation_paths):
-        # Read annotation xml
-        ann_tree = ET.parse(a_path)
-        ann_root = ann_tree.getroot()
-
-        img_info = get_image_info(annotation_root=ann_root,
-                                  extract_num_from_imgid=extract_num_from_imgid)
-        img_id = img_info['id']
-        output_json_dict['images'].append(img_info)
-
-        for obj in ann_root.findall('object'):
-            ann = get_coco_annotation_from_obj(obj=obj, label2id=label2id)
-            ann.update({'image_id': img_id, 'id': bnd_id})
-            output_json_dict['annotations'].append(ann)
+        categories = get_categories(xml_files)
+    bnd_id = START_BOUNDING_BOX_ID
+    for xml_file in xml_files:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        path = get(root, "path")
+        if len(path) == 1:
+            filename = os.path.basename(path[0].text)
+        elif len(path) == 0:
+            filename = get_and_check(root, "filename", 1).text
+        else:
+            raise ValueError("%d paths found in %s" % (len(path), xml_file))
+        ## The filename must be a number
+        image_id = get_filename_as_int(filename)
+        size = get_and_check(root, "size", 1)
+        width = int(get_and_check(size, "width", 1).text)
+        height = int(get_and_check(size, "height", 1).text)
+        image = {
+            "file_name": filename,
+            "height": height,
+            "width": width,
+            "id": image_id,
+        }
+        json_dict["images"].append(image)
+        ## Currently we do not support segmentation.
+        #  segmented = get_and_check(root, 'segmented', 1).text
+        #  assert segmented == '0'
+        for obj in get(root, "object"):
+            category = get_and_check(obj, "name", 1).text
+            if category not in categories:
+                new_id = len(categories)
+                categories[category] = new_id
+            category_id = categories[category]
+            bndbox = get_and_check(obj, "bndbox", 1)
+            xmin = int(get_and_check(bndbox, "xmin", 1).text) - 1
+            ymin = int(get_and_check(bndbox, "ymin", 1).text) - 1
+            xmax = int(get_and_check(bndbox, "xmax", 1).text)
+            ymax = int(get_and_check(bndbox, "ymax", 1).text)
+            assert xmax > xmin
+            assert ymax > ymin
+            o_width = abs(xmax - xmin)
+            o_height = abs(ymax - ymin)
+            ann = {
+                "area": o_width * o_height,
+                "iscrowd": 0,
+                "image_id": image_id,
+                "bbox": [xmin, ymin, o_width, o_height],
+                "category_id": category_id,
+                "id": bnd_id,
+                "ignore": 0,
+                "segmentation": [],
+            }
+            json_dict["annotations"].append(ann)
             bnd_id = bnd_id + 1
 
-    for label, label_id in label2id.items():
-        category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
-        output_json_dict['categories'].append(category_info)
+    for cate, cid in categories.items():
+        cat = {"supercategory": "none", "id": cid, "name": cate}
+        json_dict["categories"].append(cat)
 
-    with open(output_jsonpath, 'w') as f:
-        output_json = json.dumps(output_json_dict)
-        f.write(output_json)
+    os.makedirs(os.path.dirname(json_file), exist_ok=True)
+    json_fp = open(json_file, "w")
+    json_str = json.dumps(json_dict)
+    json_fp.write(json_str)
+    json_fp.close()
 
 
-def main():
+if __name__ == "__main__":
+    import argparse
+
     parser = argparse.ArgumentParser(
-        description='This script support converting voc format xmls to coco format json')
-    parser.add_argument('--ann_dir', type=str, default=None,
-                        help='path to annotation files directory. It is not need when use --ann_paths_list')
-    parser.add_argument('--ann_ids', type=str, default=None,
-                        help='path to annotation files ids list. It is not need when use --ann_paths_list')
-    parser.add_argument('--ann_paths_list', type=str, default=None,
-                        help='path of annotation paths list. It is not need when use --ann_dir and --ann_ids')
-    parser.add_argument('--labels', type=str, default=None,
-                        help='path to label list.')
-    parser.add_argument('--output', type=str, default='output.json', help='path to output json file')
-    parser.add_argument('--ext', type=str, default='', help='additional extension of annotation file')
+        description="Convert Pascal VOC annotation to COCO format."
+    )
+    parser.add_argument("xml_dir", help="Directory path to xml files.", type=str)
+    parser.add_argument("json_file", help="Output COCO format json file.", type=str)
     args = parser.parse_args()
-    label2id = get_label2id(labels_path=args.labels)
-    ann_paths = get_annpaths(
-        ann_dir_path=args.ann_dir,
-        ann_ids_path=args.ann_ids,
-        ext=args.ext,
-        annpaths_list_path=args.ann_paths_list
-    )
-    convert_xmls_to_cocojson(
-        annotation_paths=ann_paths,
-        label2id=label2id,
-        output_jsonpath=args.output,
-        extract_num_from_imgid=True
-    )
+    xml_files = glob.glob(os.path.join(args.xml_dir, "*.xml"))
 
-
-if __name__ == '__main__':
-    main()
+    # If you want to do train/test split, you can pass a subset of xml files to convert function.
+    print("Number of xml files: {}".format(len(xml_files)))
+    convert(xml_files, args.json_file)
+    print("Success: {}".format(args.json_file))
