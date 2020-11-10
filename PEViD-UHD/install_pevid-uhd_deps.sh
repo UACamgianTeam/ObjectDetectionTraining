@@ -7,7 +7,7 @@ sudo apt update
 # Install FFmpeg using Advanced Packaging Tool (apt)
 sudo apt install ffmpeg
 
-# Validate that the package is installed properly
+# Validate that ffmpeg is installed properly
 ffmpeg -version
 
 # Install pip packages
