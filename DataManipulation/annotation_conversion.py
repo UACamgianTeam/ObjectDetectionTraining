@@ -5,12 +5,124 @@ Contains scripts for converting between common annotation formats
 - COCO JSON
 """
 
-import argparse
-import json
 import cytoolz
 from lxml import etree, objectify
 import os
+import json
+import xml.etree.ElementTree as ET
+from typing import Dict, List
+from tqdm import tqdm
 import re
+
+
+def get_label2id(labels_path: str) -> Dict[str, int]:
+    """id is 1 start"""
+    with open(labels_path, 'r') as f:
+        labels_str = f.read().split()
+    labels_ids = list(range(1, len(labels_str)+1))
+    return dict(zip(labels_str, labels_ids))
+
+
+def get_annpaths(ann_dir_path: str = None,
+                 ann_ids_path: str = None,
+                 ext: str = '',
+                 annpaths_list_path: str = None) -> List[str]:
+    # If use annotation paths list
+    if annpaths_list_path is not None:
+        with open(annpaths_list_path, 'r') as f:
+            ann_paths = f.read().split()
+        return ann_paths
+
+    # If use annotaion ids list
+    ext_with_dot = '.' + ext if ext != '' else ''
+    with open(ann_ids_path, 'r') as f:
+        ann_ids = f.read().split()
+    ann_paths = [os.path.join(ann_dir_path, aid+ext_with_dot) for aid in ann_ids]
+    return ann_paths
+
+
+def get_image_info(annotation_root, extract_num_from_imgid=True):
+    path = annotation_root.findtext('path')
+    if path is None:
+        filename = annotation_root.findtext('filename')
+    else:
+        filename = os.path.basename(path)
+    img_name = os.path.basename(filename)
+    img_id = os.path.splitext(img_name)[0]
+    if extract_num_from_imgid and isinstance(img_id, str):
+        img_id = int(re.findall(r'\d+', img_id)[0])
+
+    size = annotation_root.find('size')
+    width = int(size.findtext('width'))
+    height = int(size.findtext('height'))
+
+    image_info = {
+        'file_name': filename,
+        'height': height,
+        'width': width,
+        'id': img_id
+    }
+    return image_info
+
+
+def get_coco_annotation_from_obj(obj, label2id):
+    label = obj.findtext('name')
+    assert label in label2id, f"Error: {label} is not in label2id !"
+    category_id = label2id[label]
+    bndbox = obj.find('bndbox')
+    xmin = int(bndbox.findtext('xmin')) - 1
+    ymin = int(bndbox.findtext('ymin')) - 1
+    xmax = int(bndbox.findtext('xmax'))
+    ymax = int(bndbox.findtext('ymax'))
+    assert xmax > xmin and ymax > ymin, f"Box size error !: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
+    o_width = xmax - xmin
+    o_height = ymax - ymin
+    ann = {
+        'area': o_width * o_height,
+        'iscrowd': 0,
+        'bbox': [xmin, ymin, o_width, o_height],
+        'category_id': category_id,
+        'ignore': 0,
+        'segmentation': []  # This script is not for segmentation
+    }
+    return ann
+
+
+def convert_xmls_to_cocojson(annotation_paths: List[str],
+                             label2id: Dict[str, int],
+                             output_jsonpath: str,
+                             extract_num_from_imgid: bool = True):
+    output_json_dict = {
+        "images": [],
+        "type": "instances",
+        "annotations": [],
+        "categories": []
+    }
+    bnd_id = 1  # START_BOUNDING_BOX_ID, TODO input as args ?
+    print('Start converting !')
+    for a_path in tqdm(annotation_paths):
+        # Read annotation xml
+        ann_tree = ET.parse(a_path)
+        ann_root = ann_tree.getroot()
+
+        img_info = get_image_info(annotation_root=ann_root,
+                                  extract_num_from_imgid=extract_num_from_imgid)
+        img_id = img_info['id']
+        output_json_dict['images'].append(img_info)
+
+        for obj in ann_root.findall('object'):
+            ann = get_coco_annotation_from_obj(obj=obj, label2id=label2id)
+            ann.update({'image_id': img_id, 'id': bnd_id})
+            output_json_dict['annotations'].append(ann)
+            bnd_id = bnd_id + 1
+
+    for label, label_id in label2id.items():
+        category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
+        output_json_dict['categories'].append(category_info)
+
+    with open(output_jsonpath, 'w') as f:
+        output_json = json.dumps(output_json_dict)
+        f.write(output_json)
 
 
 def instance2xml_base(annotation, folder_name: str, db_name: str, image_source_name: str,
@@ -51,36 +163,50 @@ def instance2xml_base(annotation, folder_name: str, db_name: str, image_source_n
     return anno_tree
 
 
-def instance2xml_bbox(anno, bbox_type='xyxy'):
-    """bbox_type: xyxy (xmin, ymin, xmax, ymax); xywh (xmin, ymin, width, height)"""
+def instance2xml_bbox(bbox_annotation, bbox_type='xyxy'):
+    """
+    Converts a bounding box annotation into an XML
+    representation of that bounding box
+
+    Bounding Box Format:
+        xyxy (xmin, ymin, xmax, ymax); xywh (xmin, ymin, width, height)
+
+    Args:
+        bbox_annotation: The data for the bounding box annotation
+    Returns:
+        A filled XML tree representing the bounding box
+    """
     assert bbox_type in ['xyxy', 'xywh']
     if bbox_type == 'xyxy':
-        xmin, ymin, w, h = anno['bbox']
+        xmin, ymin, w, h = bbox_annotation['bbox']
         xmax = xmin+w
         ymax = ymin+h
     else:
-        xmin, ymin, xmax, ymax = anno['bbox']
+        xmin, ymin, xmax, ymax = bbox_annotation['bbox']
     E = objectify.ElementMaker(annotate=False)
     anno_tree = E.object(
-        E.name(anno['category_id']),
+        E.name(bbox_annotation['category_id']),
         E.bndbox(
             E.xmin(xmin),
             E.ymin(ymin),
             E.xmax(xmax),
             E.ymax(ymax)
         ),
-        E.difficult(anno['iscrowd'])
+        E.difficult(bbox_annotation['iscrowd'])
     )
     return anno_tree
 
 
-def parse_instance(content: json, outdir: str) -> None:
+def parse_instance(content: json, outdir: str, db_name: str, image_source_name: str, source_url: str) -> None:
     """
     Parses all annotations instances and saves them into separate XML annotation files
     for each image.
     Args:
         content: JSON content containing all annotation information
         outdir: The directory under which to store XML annotation files
+        db_name: The name of the image database
+        image_source_name: The name of the source for the image
+        source_url: The source URL at which the image(s) can be found
 
     Returns:
         None
@@ -93,7 +219,7 @@ def parse_instance(content: json, outdir: str) -> None:
         instance['category_id'] = categories[instance['category_id']]
     # group by filename to pool all bbox in same file
     for name, groups in cytoolz.groupby('file_name', merged_info_list).items():
-        anno_tree = instance2xml_base(groups[0], outdir, args.database, args.image_source_name, args.source_url)
+        anno_tree = instance2xml_base(groups[0], outdir, db_name, image_source_name, source_url)
         # if one file have multiple different objects, save it in each category sub-directory
         filenames = []
         for group in groups:
@@ -172,45 +298,5 @@ def parse_keypoints(content, outdir):
             anno_tree = keypoints2xml_object(group, anno_tree, keypoints, bbox_type="xyxy")
         doc = etree.ElementTree(anno_tree)
         doc.write(open(filename, "w"), pretty_print=True)
-        print("Formating keypoints xml file {} done!".format(name))
+        print("Formatting keypoints xml file {} done!".format(name))
 
-
-def main(args):
-
-    # If the output directory of the annotations doesn't exist, create it
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
-
-    # Open the JSON file containing the annotations and get the contents
-    content = json.load(open(args.anno_file, 'r'))
-
-    # If the annotation file is an 'instance' file
-    if args.type == 'instance':
-
-        # make subdirectories
-        sub_dirs = [re.sub(" ", "_", cate['name']) for cate in content['categories']]
-        for sub_dir in sub_dirs:
-            sub_dir = os.path.join(args.output_dir, str(sub_dir))
-            if not os.path.exists(sub_dir):
-                os.makedirs(sub_dir)
-
-        # Parse the JSON into separate XML files for each image
-        parse_instance(content, args.output_dir)
-    elif args.type == 'keypoint':
-        parse_keypoints(content, args.output_dir)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--anno_file", help="annotation file for object instance/keypoint")
-    parser.add_argument("--type", type=str, help="object instance or keypoint", choices=['instance', 'keypoint'],
-                        default='instance')
-    parser.add_argument("--database", type=str, help="The name of the image database",
-                        choices=['PEViD-UHD', 'DOTA', 'COCO2017'], default='PEViD-UHD')
-    parser.add_argument("--source_url", type=str, help="source URL of images",
-                        default='https://alabama.app.box.com/folder/125463320422')
-    parser.add_argument("--image_source_name", type=str, help="Name of image source",
-                        default='EPFL')
-    parser.add_argument("--output_dir", help="output directory for voc annotation xml file")
-    args = parser.parse_args()
-    main(args)

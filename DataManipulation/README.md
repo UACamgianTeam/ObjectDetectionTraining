@@ -65,3 +65,15 @@ Then, run [generate_tfrecord.sh]() to convert the XML annotations into TFrecords
 # Located in ObjectDetectionTraining/CreateTFRecords/alternate_tfrecord_creator/
 bash generate_tfrecord.sh
 ```
+
+### Conversion Tips
+- Generate list of all filenames in current directory:
+    ```
+    # Generate list of ABSOLUTE filepaths and store result in annpaths_list.txt
+    ls -d -1 "$PWD/"*.* > annpaths_list.txt
+    ```
+    ```
+    # Generate list of RELATIVE filepaths and store result in annpaths_list.txt
+    ls > annpaths_list.txt
+    ```
+  
