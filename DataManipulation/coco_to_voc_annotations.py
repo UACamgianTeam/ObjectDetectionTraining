@@ -1,39 +1,5 @@
 import annotation_conversion
-import re
 import argparse
-import json
-import os
-
-
-def main(args):
-    """
-    Converts COCO JSON annotations to Pascal VOC annotations
-
-    :param args: Command-line arguments
-    :return:
-    """
-    # If the output directory of the annotations doesn't exist, create it
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
-
-    # Open the JSON file containing the annotations and get the contents
-    content = json.load(open(args.anno_file, 'r'))
-
-    # If the annotation file is an 'instance' file
-    if args.type == 'instance':
-
-        # make subdirectories
-        sub_dirs = [re.sub(" ", "_", cate['name']) for cate in content['categories']]
-        for sub_dir in sub_dirs:
-            sub_dir = os.path.join(args.output_dir, str(sub_dir))
-            if not os.path.exists(sub_dir):
-                os.makedirs(sub_dir)
-
-        # Parse the JSON into separate XML files for each image
-        annotation_conversion.parse_instance(content, args.output_dir, args.database, args.image_source_name, args.source_url)
-    elif args.type == 'keypoint':
-        annotation_conversion.parse_keypoints(content, args.output_dir)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -48,4 +14,9 @@ if __name__ == "__main__":
                         default='EPFL')
     parser.add_argument("--output_dir", help="output directory for voc annotation xml file")
     args = parser.parse_args()
-    main(args)
+    annotation_conversion.convert_coco_to_pascal(anno_file=args.anno_file,
+                                                 anno_type=args.type,
+                                                 database_name=args.database,
+                                                 source_url=args.source_url,
+                                                 image_source_name=args.image_source_name,
+                                                 output_dir=args.output_dir)

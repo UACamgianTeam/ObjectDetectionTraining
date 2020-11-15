@@ -15,6 +15,96 @@ from tqdm import tqdm
 import re
 
 
+def convert_coco_to_pascal(anno_file: str,
+                           anno_type: str = 'instance',
+                           database_name: str = 'PEViD-UHD',
+                           source_url: str = 'https://alabama.app.box.com/folder/125463320422',
+                           image_source_name: str = 'EPFL',
+                           output_dir: str = None):
+    """
+    Converts COCO JSON annotations to Pascal VOC XML annotations
+
+    Params:
+    --------
+        anno_file: annotation file for object instance/keypoint
+        anno_type: object instance or keypoint (what type of annotations are these?)
+        database_name: The name of the image database
+        source_url: The source URL of the images
+        image_source_name: The name of the image source
+        output_dir: output directory for voc annotation xml file
+
+    Returns:
+    ---------
+        None
+    """
+    # If the output directory of the annotations doesn't exist, create it
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Open the JSON file containing the annotations and get the contents
+    content = json.load(open(anno_file, 'r'))
+
+    # If the annotation file is an 'instance' file
+    if anno_type == 'instance':
+
+        # make subdirectories
+        sub_dirs = [re.sub(" ", "_", cate['name']) for cate in content['categories']]
+        for sub_dir in sub_dirs:
+            sub_dir = os.path.join(output_dir, str(sub_dir))
+            if not os.path.exists(sub_dir):
+                os.makedirs(sub_dir)
+
+        # Parse the JSON into separate XML files for each image
+        parse_instance(content, output_dir, database_name, image_source_name, source_url)
+    elif anno_type == 'keypoint':
+        parse_keypoints(content, output_dir)
+
+
+def convert_pascal_to_coco(labels_path: str = None,
+                           annotation_dir_path: str = None,
+                           annotation_ids_file_path: str = None,
+                           extension: str = '',
+                           annotation_paths_list_path: str = None,
+                           output_file_path: str = 'output.json'):
+    """
+    Converts Pascal VOC XML annotations to COCO JSON annotations
+
+    Params:
+    -------
+        labels_path: Path to label list
+        annotation_dir_path: Path to annotation files directory
+            This is not needed when annotation_paths_list_path is passed (not None)
+        annotation_ids_file_path: Path to annotation files IDs list
+            This is not needed when annotation_paths_list_path is passed (not None)
+        extension: Additional extension of annotation file
+        annotation_paths_list_path: Path to annotation paths list.
+            This is not needed when annotation_dir_path and annotation_ids_file_path are passed (not None)
+        output_file_path: Path to output JSON file
+
+    Returns:
+    --------
+        None
+    """
+    # Get mapping from class names to class ids
+    label2id = get_label2id(labels_path)
+
+    # Get annotation paths
+    ann_paths = get_annpaths(
+        ann_dir_path=annotation_dir_path,
+        ann_ids_path=annotation_ids_file_path,
+        ext=extension,
+        annpaths_list_path=annotation_paths_list_path
+    )
+
+    # Perform conversion
+    convert_xmls_to_cocojson(
+        annotation_paths=ann_paths,
+        label2id=label2id,
+        output_jsonpath=output_file_path,
+        extract_num_from_imgid=True
+    )
+
+
 def get_label2id(labels_path: str) -> Dict[str, int]:
     """id is 1 start"""
     with open(labels_path, 'r') as f:
