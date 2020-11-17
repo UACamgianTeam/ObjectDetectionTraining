@@ -216,7 +216,7 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
 
 
 def instance2xml_base(annotation, folder_name: str, db_name: str, image_source_name: str,
-                      source_url: str) -> etree.ElementTree(any):
+                      source_url: str):
     """
     Converts the base of an image annotation into an Pascal VOC XML Tree.
     This base contains all of the metadata about the annotation, and
