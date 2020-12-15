@@ -304,4 +304,4 @@ def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: 
 
 
 if __name__ == '__main__':
-    generate_tfrecord(args.output_path, args.image_dir, args.xml_dir, args.csv_path)
+    generate_tfrecord(args.output_path, args.image_dir, args.xml_dir, args.csv_path, is_pevid=True)

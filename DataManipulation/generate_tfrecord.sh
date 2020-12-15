@@ -14,7 +14,7 @@
 #-o ../../data/coco_2017/annotations/coco_2017_train_9labels.record
 
 # PEViD-UHD data (currently all of the dataset, need to split into train/val splits
-python generate_tfrecord.py -i ../../data/PEViD-UHD \
--x ../../data/PEViD-UHD \
--l ../../data/pevid_label_map.pbtxt \
--o ../../data/tfrecords/pevid_uhd.record
+python generate_tfrecord.py -i ../data/PEViD-UHD \
+-x ../data/PEViD-UHD \
+-l ../data/pevid_label_map.pbtxt \
+-o ../data/tfrecords/pevid_uhd.record
