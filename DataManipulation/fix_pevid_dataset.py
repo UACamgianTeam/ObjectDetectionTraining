@@ -57,7 +57,6 @@ def fix_pevid_xml_filename_elements(path):
         # Get the file name from the full path
         _, filename = os.path.split(xml_file)
         filename, _ = os.path.splitext(filename)
-        print(f'xml_file = {xml_file}')
         tree = ET.parse(xml_file)
         root = tree.getroot()
         root.find('filename').text = f'{filename}.jpg'
