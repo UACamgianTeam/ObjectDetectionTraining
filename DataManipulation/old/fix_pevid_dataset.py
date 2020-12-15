@@ -5,7 +5,7 @@ import os
 
 def fix_pevid_filenames(path):
     """
-    Throwaway function, just changing each filename element of each XML annotation file to be correct
+    throwaway function, just fixing up PEVID filenames
 
     Args:
         path: str
@@ -21,9 +21,10 @@ def fix_pevid_filenames(path):
         # Get the volume name from the full path
         volume_name = path_components[-3]
         # Set the new filename
-        new_jpg_file = os.path.join(*path_components[:-1], f'{volume_name}_{path_components[-1]}')
-        # Rename the file
-        os.rename(src=jpg_file, dst=new_jpg_file)
+        if volume_name not in path_components[-1]:
+            new_jpg_file = os.path.join(*path_components[:-1], f'{volume_name}_{path_components[-1]}')
+            # Rename the file
+            os.rename(src=jpg_file, dst=new_jpg_file)
 
     # Loop over all .xmls, fixing their filename
     for xml_file in glob.iglob(f'{path}/**/annotations/*.xml', recursive=True):
@@ -32,9 +33,10 @@ def fix_pevid_filenames(path):
         # Get the volume name from the full path
         volume_name = path_components[-3]
         # Set the new filename
-        new_xml_file = os.path.join(*path_components[:-1], f'{volume_name}_{path_components[-1]}')
-        # Rename the file
-        os.rename(src=xml_file, dst=new_xml_file)
+        if volume_name not in path_components[-1]:
+            new_xml_file = os.path.join(*path_components[:-1], f'{volume_name}_{path_components[-1]}')
+            # Rename the file
+            os.rename(src=xml_file, dst=new_xml_file)
 
     # Finally. fix the filename elements in each annotation file
     fix_pevid_xml_filename_elements(path)
@@ -64,7 +66,7 @@ def fix_pevid_xml_filename_elements(path):
 
 
 if __name__ == "__main__":
-    pevid_path = "../data/PEViD-UHD"
+    pevid_path = "../../data/PEViD-UHD"
     # fix_pevid_filenames(pevid_path)
     fix_pevid_xml_filename_elements(pevid_path)
 
