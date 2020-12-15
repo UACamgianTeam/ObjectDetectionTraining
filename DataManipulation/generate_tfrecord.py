@@ -62,6 +62,55 @@ label_map = label_map_util.load_labelmap(args.labels_path)
 label_map_dict = label_map_util.get_label_map_dict(label_map)
 
 
+def xml_to_csv_from_pevid(path):
+    """Iterates through all .xml files in a given directory and combines
+    them in a single Pandas dataframe.
+    This is used for the PEViD-UHD dataset, which has a rather odd directory structure
+    This can be used when the .xml files are separated into different subdirectories, each subdirectory being
+    a class name, like the following: "annotations/instance_val_annotation/airplane/*.xml"
+
+    NOTE: The objects stored in the XMLs created from the JSON annotations from COCO are missing fields like
+    "pose", "truncated", and "difficult", so indexing the member object from "root.findall('object')" will act
+    differently in this function based upon how many fields are specified in each <object> tag in the XML annotation
+    files.
+
+    Parameters:
+    ----------
+    path : str
+        The path containing the .xml files
+    Returns
+    -------
+    Pandas DataFrame
+        The produced dataframe
+    """
+
+    counter = 0
+    xml_list = []
+
+    # Loop over all xml annotation files
+    for xml_file in glob.iglob(f'{path}/**/annotations*.xml', recursive=True):
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        for member in root.findall('object'):
+            value = (root.find('filename').text,
+                     int(root.find('size')[0].text),
+                     int(root.find('size')[1].text),
+                     # class name
+                     member[0].text,
+                     # bbox coordinates
+                     float(member[1][0].text),  # x
+                     float(member[1][1].text),  # y
+                     float(member[1][2].text),  # width
+                     float(member[1][3].text)  # height
+                     )
+            xml_list.append(value)
+        counter += 1
+
+    column_name = ['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']
+    xml_df = pd.DataFrame(xml_list, columns=column_name)
+    return xml_df
+
+
 def xml_to_csv_with_class_subdirs(path):
     """Iterates through all .xml files in a given directory and combines
     them in a single Pandas dataframe.
@@ -159,6 +208,7 @@ def split(df, group):
 
 
 def create_tf_example(group, path):
+    """Creates a TF example given a dataframe containing annotation information and input image path """
     with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
@@ -199,21 +249,47 @@ def create_tf_example(group, path):
     return tf_example
 
 
-def main(_):
-    writer = tf.python_io.TFRecordWriter(args.output_path)
-    path = os.path.join(args.image_dir)
-    examples = xml_to_csv_with_class_subdirs(args.xml_dir)
+def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: str = None) -> None:
+    """
+    Generates a TFRecord from Pascal VOC XML annotations
+
+    Args:
+        output_path: The path to output the TFRecord file
+        image_dir: The path to the folder where the input image files are stored.
+            Defaults to the same as xml_dir
+        xml_dir: The path to the folder where input .xml files are located
+        csv_path: The path to the output .csv file. If None is provided, no file
+            will be written
+
+    Returns:
+        None
+    """
+    # Create a TFRecordWriter object (used to create TFRecords)
+    writer = tf.python_io.TFRecordWriter(output_path)
+
+    # Iterate through all XML files and create single Pandas dataframe containing all image annotations
+    examples = xml_to_csv_with_class_subdirs(xml_dir)
+
+    # Split up the examples by filename
     grouped = split(examples, 'filename')
-    print(f'Creating TFRecord file: {args.output_path}')
+
+    # Iterate through each file and create TF examples for each
+    print(f'Creating TFRecord file: {output_path}')
     for group in grouped:
-        tf_example = create_tf_example(group, path)
+        # Create a TF example object containing image AND annotation
+        tf_example = create_tf_example(group, image_dir)
+        # Write the TF example object into the TFRecordWriter object
         writer.write(tf_example.SerializeToString())
+
+    # Close the TFRecordWriter object
     writer.close()
-    print(f'Successfully created the TFRecord file: {args.output_path}')
-    if args.csv_path is not None:
-        examples.to_csv(args.csv_path, index=None)
-        print('Successfully created the CSV file: {}'.format(args.csv_path))
+    print(f'Successully created the TFRecord file: {output_path}')
+
+    # Save the CSV file (if we wish to do so)
+    if csv_path is not None:
+        examples.to_csv(csv_path, index=None)
+        print(f'Successfully created the CSV file: {csv_path}')
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    generate_tfrecord(args.output_path, args.image_dir, args.xml_dir, args.csv_path)

@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, List
 from tqdm import tqdm
 import re
+import glob
 
 
 def convert_coco_to_pascal(anno_file: str,
@@ -213,6 +214,28 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
     with open(output_jsonpath, 'w') as f:
         output_json = json.dumps(output_json_dict)
         f.write(output_json)
+
+
+def fix_pevid_xml_filename_elements(path):
+    """
+    Throwaway function, just changing each filename element of each XML annotation file to be correct
+
+    Args:
+        path: str
+            The path containing the .xml files
+
+    Returns:
+        None
+    """
+
+    # Loop over all xml annotation files
+    for xml_file in glob.iglob(f'{path}/**/annotations/*.xml', recursive=True):
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        old_filename = root.find('filename').text
+        filename, ext = os.path.splitext(old_filename)
+        root.find('filename').text = f'{filename}.jpg'
+        tree.write(xml_file)
 
 
 def instance2xml_base(annotation, folder_name: str, db_name: str, image_source_name: str,

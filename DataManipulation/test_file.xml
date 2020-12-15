@@ -1,0 +1,250 @@
+<annotation>
+   
+   
+   
+   
+   
+   
+   <folder>annotations</folder>
+   
+   
+   
+   
+   
+   
+   <filename>frame_4.jpg</filename>
+   
+   
+   
+   
+   
+   
+   <source>
+      
+      
+      
+      
+      
+      
+      <database>PEViD-UHD</database>
+      
+      
+      
+      
+      
+      
+      <annotation>PEViD-UHD</annotation>
+      
+      
+      
+      
+      
+      
+      <image>EPFL</image>
+      
+      
+      
+      
+      
+      
+      <url>https://alabama.app.box.com/folder/124516925859</url>
+      
+      
+      
+   
+   
+   
+   </source>
+   
+   
+   
+   
+   
+   
+   <size>
+      
+      
+      
+      
+      
+      
+      <width>3840</width>
+      
+      
+      
+      
+      
+      
+      <height>2160</height>
+      
+      
+      
+      
+      
+      
+      <depth>3</depth>
+      
+      
+      
+   
+   
+   
+   </size>
+   
+   
+   
+   
+   
+   
+   <segmented>0</segmented>
+   
+   
+   
+   
+   
+   
+   <object>
+      
+      
+      
+      
+      
+      
+      <name>Person</name>
+      
+      
+      
+      
+      
+      
+      <bndbox>
+         
+         
+         
+         
+         
+         
+         <xmin>1762</xmin>
+         
+         
+         
+         
+         
+         
+         <ymin>958</ymin>
+         
+         
+         
+         
+         
+         
+         <xmax>1840</xmax>
+         
+         
+         
+         
+         
+         
+         <ymax>1160</ymax>
+         
+         
+         
+      
+      
+      
+      </bndbox>
+      
+      
+      
+   
+   
+   
+   </object>
+   
+   
+   
+
+   
+   
+   <object>
+      
+      
+      
+      
+      <name>Person</name>
+      
+      
+      
+      
+      <bndbox>
+         
+         
+         
+         
+         <xmin>1600</xmin>
+         
+         
+         
+         
+         <ymin>966</ymin>
+         
+         
+         
+         
+         <xmax>1680</xmax>
+         
+         
+         
+         
+         <ymax>1156</ymax>
+         
+         
+      
+      
+      </bndbox>
+      
+      
+   
+   
+   </object>
+   
+   
+
+   
+   <object>
+      
+      
+      <name>Person</name>
+      
+      
+      <bndbox>
+         
+         
+         <xmin>1762</xmin>
+         
+         
+         <ymin>958</ymin>
+         
+         
+         <xmax>1840</xmax>
+         
+         
+         <ymax>1160</ymax>
+         
+      
+      </bndbox>
+      
+   
+   </object>
+   
+
+   <object>
+      <name>Person</name>
+      <bndbox>
+         <xmin>1600</xmin>
+         <ymin>966</ymin>
+         <xmax>1680</xmax>
+         <ymax>1156</ymax>
+      </bndbox>
+   </object>
+</annotation>
