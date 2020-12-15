@@ -65,9 +65,8 @@ label_map_dict = label_map_util.get_label_map_dict(label_map)
 def xml_to_csv_from_pevid(path):
     """Iterates through all .xml files in a given directory and combines
     them in a single Pandas dataframe.
-    This is used for the PEViD-UHD dataset, which has a rather odd directory structure
-    This can be used when the .xml files are separated into different subdirectories, each subdirectory being
-    a class name, like the following: "annotations/instance_val_annotation/airplane/*.xml"
+    This is used for the PEViD-UHD dataset, which has a rather odd directory structure, where each volume is
+    stored as a separate subdirectory.
 
     NOTE: The objects stored in the XMLs created from the JSON annotations from COCO are missing fields like
     "pose", "truncated", and "difficult", so indexing the member object from "root.findall('object')" will act
@@ -88,7 +87,7 @@ def xml_to_csv_from_pevid(path):
     xml_list = []
 
     # Loop over all xml annotation files
-    for xml_file in glob.iglob(f'{path}/**/annotations*.xml', recursive=True):
+    for xml_file in glob.iglob(f'{path}/**/annotations/*.xml', recursive=True):
         tree = ET.parse(xml_file)
         root = tree.getroot()
         for member in root.findall('object'):
@@ -207,8 +206,15 @@ def split(df, group):
     return [data(filename, gb.get_group(x)) for filename, x in zip(gb.groups.keys(), gb.groups)]
 
 
-def create_tf_example(group, path):
-    """Creates a TF example given a dataframe containing annotation information and input image path """
+def create_tf_example(group, path, is_pevid: bool = False):
+    """Creates a TF example given a dataframe containing annotation information and input image path.
+     This is only used for TFExample creation from the PEViD-UHD dataset"""
+
+    if is_pevid:
+        # Get and add the volume and 'frames' to the path
+        volume_name = group.filename.split('_frame')[0]
+        path = os.path.join(path, volume_name, 'frames')
+
     with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
@@ -249,7 +255,8 @@ def create_tf_example(group, path):
     return tf_example
 
 
-def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: str = None) -> None:
+def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: str = None,
+                      is_pevid: bool = False) -> None:
     """
     Generates a TFRecord from Pascal VOC XML annotations
 
@@ -260,6 +267,8 @@ def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: 
         xml_dir: The path to the folder where input .xml files are located
         csv_path: The path to the output .csv file. If None is provided, no file
             will be written
+        is_pevid: True if the dataset to generate a TFRecord file from is the PEViD-UHD
+            dataset, false otherwise.
 
     Returns:
         None
@@ -268,7 +277,10 @@ def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: 
     writer = tf.python_io.TFRecordWriter(output_path)
 
     # Iterate through all XML files and create single Pandas dataframe containing all image annotations
-    examples = xml_to_csv_with_class_subdirs(xml_dir)
+    if is_pevid:
+        examples = xml_to_csv_from_pevid(xml_dir)
+    else:
+        examples = xml_to_csv_with_class_subdirs(xml_dir)
 
     # Split up the examples by filename
     grouped = split(examples, 'filename')
@@ -277,7 +289,7 @@ def generate_tfrecord(output_path: str, image_dir: str, xml_dir: str, csv_path: 
     print(f'Creating TFRecord file: {output_path}')
     for group in grouped:
         # Create a TF example object containing image AND annotation
-        tf_example = create_tf_example(group, image_dir)
+        tf_example = create_tf_example(group, image_dir, is_pevid)
         # Write the TF example object into the TFRecordWriter object
         writer.write(tf_example.SerializeToString())
 
