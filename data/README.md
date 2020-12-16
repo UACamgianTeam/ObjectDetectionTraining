@@ -1,6 +1,6 @@
 # Data
 
-This folder will house all of the input data for the models, as well as the [label map](mscoco_label_map.pbtxt) for the classes.
+This folder will house all of the input data for the models, as well as the [label map](label_maps/mscoco_label_map.pbtxt) for the classes.
 
 See [tensorflow_object_detection_create_coco_tfrecord](https://github.com/elmines/JetsonBenchmarking/tree/master/model_retraining/CreateTFRecords/tensorflow_object_detection_create_coco_tfrecord) for generating input data
 

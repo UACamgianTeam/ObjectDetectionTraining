@@ -27,7 +27,6 @@ python model_main_tf2.py -- \
   --pipeline_config_path=$PIPELINE_CONFIG_PATH \
   --alsologtostderr
 """
-
 from absl import flags
 import tensorflow.compat.v2 as tf
 from object_detection import model_lib_v2
@@ -38,25 +37,15 @@ import tensorflow as tf_
 gpus = tf_.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
-        # Method A: Set hard limit of 4096 MB ###
-        tf.config.experimental.set_virtual_device_configuration(gpus[0], [
-            tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
-        # Method B: Allow dynamic memory growth ###
-        # for gpu in gpus:
-        #     tf_.config.experimental.set_memory_growth(gpu, True)
+        for gpu in gpus:
+            # tf_.config.experimental.set_memory_growth(gpu, True)
+            tf.config.experimental.set_virtual_device_configuration(gpus[0], [
+                tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
     except RuntimeError as e:
         print(e)
 
-# Enable specific memory limit of the GPU
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        tf.config.experimental.set_virtual_device_configuration(gpus[0], [
-            tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)])
-    except RuntimeError as e:
-        print(e)
-
-flags.DEFINE_string('pipeline_config_path', None, 'Path to pipeline config file.')
+flags.DEFINE_string('pipeline_config_path', None, 'Path to pipeline config '
+                                                  'file.')
 flags.DEFINE_integer('num_train_steps', None, 'Number of train steps.')
 flags.DEFINE_bool('eval_on_train_data', False, 'Enable evaluating on train '
                                                'data (only supported in distributed training).')

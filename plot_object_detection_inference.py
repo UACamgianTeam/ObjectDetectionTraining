@@ -11,7 +11,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 
-retrained_detect_fn = tf.saved_model.load('models/retrained_models/my_ssd_mobilenet_v2_fpnlite')
+retrained_detect_fn = tf.saved_model.load('models/old_models/my_ssd_mobilenet_v2_fpnlite')
 original_detect_fn = tf.saved_model.load('models/original_models/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8')
 
 

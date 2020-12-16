@@ -88,6 +88,10 @@ def xml_to_csv_from_pevid(path):
 
     # Loop over all xml annotation files
     for xml_file in glob.iglob(f'{path}/**/annotations/*.xml', recursive=True):
+        # TODO: DELETE THIS (this is for creating TRAIN and VAL TFRecords##########
+        if 'exchanging_bags_day_indoor_1' not in xml_file:
+            continue
+        ###########################################################################
         tree = ET.parse(xml_file)
         root = tree.getroot()
         for member in root.findall('object'):

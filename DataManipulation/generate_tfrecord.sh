@@ -16,5 +16,5 @@
 # PEViD-UHD data (currently all of the dataset, need to split into train/val splits
 python generate_tfrecord.py -i ../data/PEViD-UHD \
 -x ../data/PEViD-UHD \
--l ../data/pevid_label_map.pbtxt \
--o ../data/tfrecords/pevid_uhd.record
+-l ../data/label_maps/pevid_label_map.pbtxt \
+-o ../data/tfrecords/pevid_uhd_val.record
