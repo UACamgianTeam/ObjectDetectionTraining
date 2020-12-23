@@ -14,6 +14,26 @@ from typing import Dict, List
 from tqdm import tqdm
 import re
 import glob
+from coco_assistant import COCO_Assistant
+
+
+def merge_coco_datasets(img_dir: str, ann_dir: str) -> None:
+    """
+    Merges COCO-style annotations into a single COCO JSON annotation file
+
+    Parameters:
+    -----------
+    img_dir: Path to directory containing image folders
+    ann_dir: Path to directory containing COCO-JSON annotations
+
+    Returns:
+    --------
+    None
+    """
+    # Create a COCO Assistant object from the coco-assistant package and merge
+    # the datasets
+    coco_assistant = COCO_Assistant(img_dir, ann_dir)
+    coco_assistant.merge(merge_images=True)
 
 
 def convert_coco_to_pascal(anno_file: str,
@@ -413,3 +433,12 @@ def parse_keypoints(content, outdir):
         doc.write(open(filename, "w"), pretty_print=True)
         print("Formatting keypoints xml file {} done!".format(name))
 
+
+if __name__ == "__main__":
+
+    coco_dir = '/home/ubuntu/PycharmProjects/ObjectDetectionTraining/data/PEViD-UHD/coco_json'
+
+    images_dir = os.path.join(coco_dir, 'images')
+    annotations_dir = os.path.join(coco_dir, 'annotations')
+
+    merge_coco_datasets(images_dir, annotations_dir)
