@@ -16,7 +16,7 @@ fi
 VENV_DIR=env
 
 sudo apt-get update
-sudo apt-get install -y libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev
+sudo apt-get install -y libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev ffmpeg
 sudo apt-get install -y python3-venv python3-pip
 
 
