@@ -436,7 +436,7 @@ def parse_keypoints(content, outdir):
 
 if __name__ == "__main__":
 
-    coco_dir = '/home/ubuntu/PycharmProjects/ObjectDetectionTraining/data/PEViD-UHD/coco_json'
+    coco_dir = '/home/ubuntu/PycharmProjects/ObjectDetectionTraining/data/change_detected_PEViD-UHD/separated'
 
     images_dir = os.path.join(coco_dir, 'images')
     annotations_dir = os.path.join(coco_dir, 'annotations')
